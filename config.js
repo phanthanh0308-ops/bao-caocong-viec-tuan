@@ -10,7 +10,7 @@ var APP_CONFIG = {
   //  Lấy từ: Apps Script → Deploy → Manage deployments → URL
   //  Mỗi lần deploy lại phải cập nhật URL mới vào đây
   // ----------------------------------------------------------
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbwza5_nPKEgNnFk5Ndf43nYJtI0tnbBoS2aUdAM_QEiSy1bexy4IzN2a7DYF8KDBNqu6A/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbz2g8tG08Fq1cVCR5ZktbtLc2BvJPHa5LoIu-ywEONNnD0gpISvC3JPjkqOIUig-ZAo/exec',
 
   // ----------------------------------------------------------
   //  GOOGLE SHEET ID
