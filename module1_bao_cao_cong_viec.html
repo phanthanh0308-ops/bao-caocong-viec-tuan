@@ -120,6 +120,18 @@ select.cin{cursor:pointer}
 .sheet-link{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);font-family:var(--mono);text-decoration:none;padding:2px 7px;border-radius:4px;border:1px solid var(--accent-light);background:var(--accent-light);transition:all .13s}
 .sheet-link:hover{background:var(--accent);color:#fff}
 
+
+/* DATE PICKER */
+.date-input{width:100%;border:none;background:transparent;font-family:var(--sans);font-size:12px;color:var(--text);padding:3px 4px;border-radius:4px;text-align:center;cursor:pointer}
+.date-input:focus{outline:2px solid var(--accent);background:var(--white)}
+/* STATUS BADGE */
+.sta-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;white-space:nowrap}
+.sta-cct{background:#f1f5f9;color:#64748b}
+.sta-dl{background:#dbeafe;color:#1d4ed8}
+.sta-done{background:#dcfce7;color:#16a34a}
+.sta-ddg{background:#fef9c3;color:#a16207}
+.sta-test{background:#fce7f3;color:#be185d}
+
 /* LOADING OVERLAY */
 .loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.82);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:10px}
 .spinner{width:28px;height:28px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
@@ -239,6 +251,7 @@ select.cin{cursor:pointer}
           <th style="width:85px">Độ ưu tiên</th>
           <th style="width:105px">TG thực hiện (ngày)</th>
           <th style="width:130px">Thời gian hoàn thành</th>
+          <th style="width:130px">Trạng thái</th>
           <th style="width:180px">Ghi chú</th>
           <th style="width:46px"></th>
         </tr></thead>
@@ -279,8 +292,8 @@ var API_KEY = 'api_url_m1';
 var SPREADSHEET_ID_KEY = 'spreadsheet_id_m1';
 
 var PRI = ['P1','P2','P3'];
-var STA = ['Chua co timeline','Dang lam','Done','Dang danh gia','Da gui test','Da release'];
-var STA_VI = ['Chưa có timeline','Đang làm','Done','Đang đánh giá','Đã gửi test','Đã release'];
+var STA = ['Chua co timeline','Dang lam','Done','Dang danh gia','Testing'];
+var STA_VI = ['Chưa có timeline','Đang làm','Done','Đang đánh giá','Testing'];
 var MONTHS = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
 var DOWS = ['CN','T2','T3','T4','T5','T6','T7'];
 
@@ -591,9 +604,9 @@ function clearAll() {
 
 function exportCSV() {
   if (!curWeek || !rows.length) { showToast('Không có dữ liệu!','err'); return; }
-  var hd=['#','Phân hệ','Tính năng/Màn hình','Mô tả','Độ ưu tiên','TG thực hiện','TG hoàn thành','Ghi chú'];
+  var hd=['#','Phân hệ','Tính năng/Màn hình','Mô tả','Độ ưu tiên','TG thực hiện','TG hoàn thành','Trạng thái','Ghi chú'];
   var body=[];
-  for (var i=0;i<rows.length;i++) body.push([i+1,cc(rows[i].ph),cc(rows[i].tn),cc(rows[i].mt),rows[i].pri,cc(rows[i].tg),cc(rows[i].sta),cc(rows[i].gc)].join(','));
+  for (var i=0;i<rows.length;i++) body.push([i+1,cc(rows[i].ph),cc(rows[i].tn),cc(rows[i].mt),rows[i].pri,cc(rows[i].tg),cc(rows[i].ngay),cc(rows[i].ts),cc(rows[i].gc)].join(','));
   var blob=new Blob(['\uFEFF'+[hd.join(',')].concat(body).join('\r\n')],{type:'text/csv;charset=utf-8;'});
   var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='m1_'+curWeek+'.csv'; a.click();
   showToast('Đã xuất CSV','ok');
@@ -607,7 +620,7 @@ function cc(v){ return '"'+(v||'').replace(/"/g,'""')+'"'; }
 function renderTable() {
   var tb = document.getElementById('tBody');
   if (!curWeek || !rows.length) {
-    tb.innerHTML = '<tr><td colspan="9" class="empty-td"><span class="empty-ico">📋</span>'
+    tb.innerHTML = '<tr><td colspan="10" class="empty-td"><span class="empty-ico">📋</span>'
       +(curWeek ? 'Chưa có task. Bấm + Thêm dòng.' : 'Chọn hoặc tạo một tuần để bắt đầu.')
       +'</td></tr>';
     updateStats(); return;
@@ -622,8 +635,10 @@ function renderTable() {
 function rowHTML(r, i) {
   var priOpts = '';
   for (var p = 0; p < PRI.length; p++) priOpts += '<option value="'+PRI[p]+'"'+(r.pri===PRI[p]?' selected':'')+'>'+PRI[p]+'</option>';
-  var staOpts = '';
-  for (var s = 0; s < STA.length; s++) staOpts += '<option value="'+STA[s]+'"'+(r.sta===STA[s]?' selected':'')+'>'+STA_VI[s]+'</option>';
+  var tsOpts = '';
+  for (var s = 0; s < STA.length; s++) tsOpts += '<option value="'+STA[s]+'"'+(r.ts===STA[s]?' selected':'')+'>'+STA_VI[s]+'</option>';
+  var ngayVal = '';
+  if (r.ngay && r.ngay.indexOf('/') > 0) { var dp=r.ngay.split('/'); ngayVal=dp[2]+'-'+dp[1]+'-'+dp[0]; }
   return '<tr>'
     +'<td class="td-stt">'+(i+1)+'</td>'
     +'<td><textarea class="cin" rows="2" oninput="autoH(this)" onchange="setF('+i+',\'ph\',this.value);mark()">'+escH(r.ph||'')+'</textarea></td>'
@@ -631,18 +646,20 @@ function rowHTML(r, i) {
     +'<td><textarea class="cin" rows="2" oninput="autoH(this)" onchange="setF('+i+',\'mt\',this.value);mark()">'+escH(r.mt||'')+'</textarea></td>'
     +'<td style="text-align:center"><select class="cin ctr" onchange="setF('+i+',\'pri\',this.value);mark();updateStats()">'+priOpts+'</select></td>'
     +'<td><input type="text" class="cin ctr" value="'+escH(r.tg||'')+'" placeholder="0.5" onchange="setF('+i+',\'tg\',this.value);mark()"></td>'
-    +'<td><select class="cin" onchange="setF('+i+',\'sta\',this.value);mark();updateStats()">'+staOpts+'</select></td>'
+    +'<td style="text-align:center"><input type="date" class="cin ctr" value="'+ngayVal+'" onchange="setNgay('+i+',this.value);mark()"></td>'
+    +'<td><select class="cin" onchange="setF('+i+',\'ts\',this.value);mark();updateStats()">'+tsOpts+'</select></td>'
     +'<td><textarea class="cin" rows="2" oninput="autoH(this)" onchange="setF('+i+',\'gc\',this.value);mark()">'+escH(r.gc||'')+'</textarea></td>'
     +'<td style="text-align:center"><button class="btn btn-xs btn-danger" onclick="delRow('+i+')">✕</button></td>'
     +'</tr>';
 }
 
+function setNgay(i, val) { if(!val){rows[i].ngay='';return;} var dp=val.split('-'); rows[i].ngay=dp[2]+'/'+dp[1]+'/'+dp[0]; }
 function setF(i, f, v) { rows[i][f] = v; }
 function mark() { dirty=true; setSave('<span class="dot"></span>Có thay đổi chưa lưu lên Sheets'); }
 
 function addRow() {
   if (!curWeek) { showToast('Chọn tuần trước!','err'); return; }
-  rows.push({ph:'',tn:'',mt:'',pri:'P2',tg:'',sta:'Chua co timeline',gc:''});
+  rows.push({ph:'',tn:'',mt:'',pri:'P2',tg:'',ngay:'',ts:'Chua co timeline',gc:''});
   mark(); renderTable();
   setTimeout(function(){
     var tb=document.getElementById('tBody');
@@ -661,8 +678,8 @@ function resizeAll(){ var els=document.querySelectorAll('textarea.cin'); for(var
 function updateStats() {
   var t=rows.length,done=0,doing=0,p1=0;
   for (var i=0;i<rows.length;i++){
-    if(rows[i].sta==='Done') done++;
-    else if(rows[i].sta==='Dang lam') doing++;
+    if(rows[i].ts==='Done') done++;
+    else if(rows[i].ts==='Dang lam') doing++;
     if(rows[i].pri==='P1') p1++;
   }
   document.getElementById('sTotal').textContent=t;
