@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Module 1 — Báo cáo công việc</title>
+<script src="config.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
   --bg:#f4f6fb;--white:#fff;--border:#dde1ea;--border2:#b8c0d4;
@@ -132,6 +134,23 @@ select.cin{cursor:pointer}
 .sta-ddg{background:#fef9c3;color:#a16207}
 .sta-test{background:#fce7f3;color:#be185d}
 
+/* AUTH BAR */
+.auth-bar{background:#fff;border-bottom:1px solid var(--border);padding:8px 24px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2)}
+.auth-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--accent-light)}
+.auth-name{font-weight:500;color:var(--text)}
+.auth-email{color:var(--text3);font-family:var(--mono);font-size:11px}
+.auth-role{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;font-family:var(--mono)}
+.auth-role.editor{background:#dcfce7;color:#16a34a}
+.auth-role.viewer{background:#f1f5f9;color:#64748b}
+.auth-btn{padding:5px 12px;border-radius:5px;border:1px solid var(--border2);background:var(--white);color:var(--text2);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px}
+.auth-btn:hover{background:var(--bg)}
+.readonly-banner{background:#fef9c3;border:1px solid #fcd34d;border-radius:6px;padding:7px 14px;font-size:12px;color:#92400e;display:none;align-items:center;gap:8px;margin:10px 24px 0}
+.readonly-banner.show{display:flex}
+/* LOCK OVERLAY cho inputs khi readonly */
+.tbl-readonly td input,.tbl-readonly td textarea,.tbl-readonly td select{pointer-events:none;opacity:0.7;background:transparent}
+.tbl-readonly .btn-xs{display:none}
+.tbl-readonly-btns .btn-primary,.tbl-readonly-btns .btn-green{opacity:0.4;pointer-events:none}
+
 /* LOADING OVERLAY */
 .loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.82);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:10px}
 .spinner{width:28px;height:28px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
@@ -174,17 +193,27 @@ select.cin{cursor:pointer}
   </div>
 </div>
 
-<!-- SETUP BANNER -->
-<div class="setup-banner" id="setupBanner">
-  <strong>⚠ Chưa cấu hình Google Sheets</strong><br>
-  Dán <strong>Web App URL</strong> của Google Apps Script vào ô dưới, rồi bấm <strong>Lưu &amp; Kết nối</strong>.<br>
-  <small>Xem file <code>Code_GoogleAppsScript.gs</code> để biết cách tạo Web App URL.</small>
-  <div class="setup-input-row">
-    <input type="text" class="setup-input" id="apiUrlInput" placeholder="https://script.google.com/macros/s/AKfy.../exec">
-    <button class="btn btn-primary btn-sm" onclick="saveApiUrl()">Lưu &amp; Kết nối</button>
-    <button class="btn btn-sm" onclick="clearApiUrl()">Xóa cấu hình</button>
+<!-- AUTH BAR -->
+<div class="auth-bar" id="authBar">
+  <div id="authGuest" style="display:flex;align-items:center;gap:8px;width:100%">
+    <span style="color:var(--text3)">👁 Chế độ xem — đăng nhập để chỉnh sửa</span>
+    <div id="googleSignInBtn" style="margin-left:auto"></div>
+  </div>
+  <div id="authUser" style="display:none;align-items:center;gap:8px;width:100%">
+    <img class="auth-avatar" id="authAvatar" src="" alt="">
+    <div>
+      <div class="auth-name" id="authName"></div>
+      <div class="auth-email" id="authEmail"></div>
+    </div>
+    <span class="auth-role" id="authRole">Viewer</span>
+    <button class="auth-btn" style="margin-left:auto" onclick="signOut()">Đăng xuất</button>
   </div>
 </div>
+<div class="readonly-banner" id="readonlyBanner">
+  🔒 Tài khoản này không có quyền chỉnh sửa. Liên hệ quản trị viên để được cấp quyền.
+</div>
+
+<!-- SETUP BANNER (removed - config in config.js) -->
 
 <!-- WEEK BAR -->
 <div class="weekbar">
@@ -289,6 +318,9 @@ select.cin{cursor:pointer}
 //  CONFIG & STATE
 // ══════════════════════════════════════════════
 var API_KEY = 'api_url_m1';
+// Auth state
+var authToken = null, authUser = null, isEditor = false;
+var GOOGLE_CLIENT_ID = 'DAN_GOOGLE_CLIENT_ID_VAO_DAY'; // Xem huong dan ben duoi
 var SPREADSHEET_ID_KEY = 'spreadsheet_id_m1';
 
 var PRI = ['P1','P2','P3'];
@@ -308,53 +340,41 @@ var cds = null, cde = null, cstep = 0;
 //  INIT
 // ══════════════════════════════════════════════
 function init() {
-  apiUrl = localStorage.getItem(API_KEY) || '';
-  spreadsheetId = localStorage.getItem(SPREADSHEET_ID_KEY) || '';
-
-  var inp = document.getElementById('apiUrlInput');
-  if (apiUrl) {
-    inp.value = apiUrl;
-    document.getElementById('setupBanner').style.display = 'none';
-    fetchWeeks();
+  // Doc config tu file config.js
+  if (typeof APP_CONFIG !== 'undefined') {
+    apiUrl        = APP_CONFIG.GAS_URL    || '';
+    spreadsheetId = APP_CONFIG.SHEET_ID   || '';
+    GOOGLE_CLIENT_ID = APP_CONFIG.GOOGLE_CLIENT_ID || '';
   } else {
-    setSyncStatus('err', 'Chưa cấu hình');
+    // Fallback localStorage neu config.js chua load
+    apiUrl        = localStorage.getItem(API_KEY) || '';
+    spreadsheetId = localStorage.getItem(SPREADSHEET_ID_KEY) || '';
   }
+
+  if (apiUrl) {
+    setSyncStatus('loading', 'Đang kết nối...');
+  } else {
+    setSyncStatus('err', 'Chưa cấu hình GAS_URL trong config.js');
+  }
+
+  setEditorMode(false);
   renderTable();
   calRender();
+
+  if (window.google) {
+    initGoogleAuth();
+  } else {
+    window.addEventListener('load', function() {
+      setTimeout(initGoogleAuth, 500);
+    });
+  }
+  if (apiUrl) fetchWeeks();
 }
 
 // ══════════════════════════════════════════════
 //  SETUP API URL
 // ══════════════════════════════════════════════
-function saveApiUrl() {
-  var url = document.getElementById('apiUrlInput').value.trim();
-  if (!url || url.indexOf('https://script.google.com') !== 0) {
-    showToast('URL không hợp lệ! Phải bắt đầu bằng https://script.google.com','err'); return;
-  }
-  apiUrl = url;
-  localStorage.setItem(API_KEY, url);
-
-  // Thu lay spreadsheetId tu URL neu co
-  var idMatch = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-  if (idMatch) {
-    spreadsheetId = idMatch[1];
-    localStorage.setItem(SPREADSHEET_ID_KEY, spreadsheetId);
-  }
-
-  document.getElementById('setupBanner').style.display = 'none';
-  showToast('Đã lưu URL. Đang kết nối...','info');
-  fetchWeeks();
-}
-
-function clearApiUrl() {
-  if (!confirm('Xóa cấu hình API URL?')) return;
-  apiUrl = '';
-  localStorage.removeItem(API_KEY);
-  localStorage.removeItem(SPREADSHEET_ID_KEY);
-  document.getElementById('apiUrlInput').value = '';
-  document.getElementById('setupBanner').style.display = 'block';
-  setSyncStatus('err', 'Chưa cấu hình');
-}
+// saveApiUrl & clearApiUrl removed - config in config.js
 
 // ══════════════════════════════════════════════
 //  API CALLS
@@ -579,11 +599,13 @@ function updateSheetLink(weekName) {
 //  SAVE DATA
 // ══════════════════════════════════════════════
 function saveData() {
+  if (!isEditor) { showToast('Bạn không có quyền chỉnh sửa!','err'); return; }
   if (!curWeek) { showToast('Chưa chọn tuần!','err'); return; }
   if (!apiUrl) { showToast('Chưa cấu hình API URL!','err'); return; }
   showLoading(true);
   setSave('Đang lưu lên Google Sheets...');
-  apiPost({action:'saveWeek', week: curWeek, rows: rows}, function(data, err) {
+  var editorInfo = authUser ? { email: authUser.email, name: authUser.name } : null;
+  apiPost({action:'saveWeek', week: curWeek, rows: rows, _editor: editorInfo}, function(data, err) {
     showLoading(false);
     if (err || !data || data.error) {
       showToast('Lỗi lưu: '+(err||(data&&data.error)||''),'err');
@@ -658,6 +680,7 @@ function setF(i, f, v) { rows[i][f] = v; }
 function mark() { dirty=true; setSave('<span class="dot"></span>Có thay đổi chưa lưu lên Sheets'); }
 
 function addRow() {
+  if (!isEditor) { showToast('Bạn không có quyền chỉnh sửa!','err'); return; }
   if (!curWeek) { showToast('Chọn tuần trước!','err'); return; }
   rows.push({ph:'',tn:'',mt:'',pri:'P2',tg:'',ngay:'',ts:'Chua co timeline',gc:''});
   mark(); renderTable();
@@ -787,6 +810,91 @@ function calConfirm(){
   document.getElementById('calHint').textContent='Chọn ngày bắt đầu tuần';
   document.getElementById('calPop').classList.remove('open');
   document.getElementById('calTrig').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════
+//  AUTH — GOOGLE SIGN IN
+// ══════════════════════════════════════════════
+function initGoogleAuth() {
+  if (!window.google || !GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.indexOf('DAN_') === 0) {
+    // Chua cau hinh Client ID - van cho xem nhung khong cho edit
+    setEditorMode(false);
+    return;
+  }
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleSignIn,
+    auto_select: false
+  });
+  google.accounts.id.renderButton(
+    document.getElementById('googleSignInBtn'),
+    { theme: 'outline', size: 'small', text: 'signin_with', locale: 'vi' }
+  );
+}
+
+function handleGoogleSignIn(response) {
+  // Decode JWT token de lay thong tin co ban
+  var parts = response.credential.split('.');
+  var payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+  authToken = response.credential;
+
+  // Goi GAS kiem tra whitelist
+  setSyncStatus('loading', 'Đang xác thực...');
+  apiGet({ action: 'checkAuth', token: response.credential }, function(data, err) {
+    if (err || !data) {
+      showToast('Lỗi xác thực: ' + (err || 'Không rõ'), 'err');
+      setSyncStatus('err', 'Lỗi xác thực');
+      return;
+    }
+    authUser = { email: data.email || payload.email, name: data.name || payload.name, picture: payload.picture || '' };
+    isEditor = data.allowed === true;
+
+    // Hien thi UI
+    document.getElementById('authGuest').style.display = 'none';
+    document.getElementById('authUser').style.display = 'flex';
+    document.getElementById('authName').textContent = authUser.name;
+    document.getElementById('authEmail').textContent = authUser.email;
+    if (authUser.picture) document.getElementById('authAvatar').src = authUser.picture;
+
+    var roleEl = document.getElementById('authRole');
+    if (isEditor) {
+      roleEl.textContent = 'Editor'; roleEl.className = 'auth-role editor';
+      document.getElementById('readonlyBanner').classList.remove('show');
+      showToast('Xin chào ' + authUser.name + '! Bạn có quyền chỉnh sửa.', 'ok');
+    } else {
+      roleEl.textContent = 'Viewer'; roleEl.className = 'auth-role viewer';
+      document.getElementById('readonlyBanner').classList.add('show');
+      showToast('Tài khoản này chỉ có quyền xem.', 'info');
+    }
+    setEditorMode(isEditor);
+    fetchWeeks();
+  });
+}
+
+function signOut() {
+  if (window.google) google.accounts.id.disableAutoSelect();
+  authToken = null; authUser = null; isEditor = false;
+  document.getElementById('authGuest').style.display = 'flex';
+  document.getElementById('authUser').style.display = 'none';
+  document.getElementById('readonlyBanner').classList.remove('show');
+  setEditorMode(false);
+  showToast('Đã đăng xuất', 'info');
+}
+
+function setEditorMode(on) {
+  isEditor = on;
+  var tbl = document.getElementById('tblCard');
+  var saveBar = document.querySelector('.save-btns');
+  var tblBar = document.querySelector('.tbl-bar-btns');
+  if (on) {
+    tbl.classList.remove('tbl-readonly');
+    if (saveBar) saveBar.classList.remove('tbl-readonly-btns');
+    if (tblBar) tblBar.classList.remove('tbl-readonly-btns');
+  } else {
+    tbl.classList.add('tbl-readonly');
+    if (saveBar) saveBar.classList.add('tbl-readonly-btns');
+    if (tblBar) tblBar.classList.add('tbl-readonly-btns');
+  }
 }
 
 // ── INIT ──
