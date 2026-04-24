@@ -24,7 +24,7 @@ var APP_CONFIG = {
   //  Lấy từ: console.cloud.google.com → Credentials → OAuth 2.0
   //  Để trống nếu chưa cấu hình → tắt tính năng đăng nhập
   // ----------------------------------------------------------
-  GOOGLE_CLIENT_ID: '',
+  GOOGLE_CLIENT_ID: '326174705190-bcc9k0dq6srf34042jg0o7ma5b0gm0b3.apps.googleusercontent.com',
 
   // ----------------------------------------------------------
   //  THÔNG TIN ỨNG DỤNG
