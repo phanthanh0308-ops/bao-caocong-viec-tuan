@@ -17,7 +17,7 @@ var APP_CONFIG = {
   //  Lấy từ URL Google Sheet:
   //  docs.google.com/spreadsheets/d/[ID_O_DAY]/edit
   // ----------------------------------------------------------
-  SHEET_ID: '',
+  SHEET_ID: '1MeEnH6EhWuEhhf-cnFfKixWUWlz-Fxa0BKAH80NBaQI',
 
   // ----------------------------------------------------------
   //  GOOGLE OAUTH CLIENT ID (dùng cho đăng nhập Google)
