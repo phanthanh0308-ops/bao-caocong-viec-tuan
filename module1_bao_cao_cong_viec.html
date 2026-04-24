@@ -224,12 +224,12 @@ select.cin{cursor:pointer}
   <span class="sep">|</span>
   <span class="wlabel">Tạo tuần mới:</span>
   <div class="cal-wrap" id="calWrap">
-    <div class="cal-trigger" id="calTrig" onclick="calToggle()">
+    <div class="cal-trigger" id="calTrig" onclick="event.stopPropagation();calToggle()">
       <span style="font-size:14px">📅</span>
       <span id="calTxt" style="flex:1">Chọn khoảng ngày...</span>
       <span style="font-size:10px;color:var(--text3)">▼</span>
     </div>
-    <div class="cal-popup" id="calPop">
+    <div class="cal-popup" id="calPop" onclick="event.stopPropagation()">
       <div class="cal-nav">
         <button class="cal-navbtn" onclick="calMove(-1)">‹</button>
         <div class="cal-mlabel" id="calML"></div>
@@ -765,7 +765,7 @@ function calRender(){
     if(cds&&dt.getTime()===cds.getTime()) cls+=' sel-start';
     if(cde&&dt.getTime()===cde.getTime()) cls+=' sel-end';
     if(cds&&cde&&dt>cds&&dt<cde) cls+=' in-range';
-    h+='<div class="'+cls+'" onclick="calPick('+cvy+','+cvm+','+d+')">'+d+'</div>';
+    h+='<div class="'+cls+'" onclick="event.stopPropagation();calPick('+cvy+','+cvm+','+d+')">'+d+'</div>';
   }
   document.getElementById('calGrid').innerHTML=h;
   calUpdateFoot();
