@@ -517,16 +517,16 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
           </div>
         </div>
 
-        <!-- Row 2: Phân bổ theo giờ (full width) -->
-        <div class="section-block" style="margin-bottom:16px">
-          <div class="section-block-title">🕐 Phân bổ giao dịch theo giờ</div>
-          <div style="padding:16px;height:220px;position:relative"><canvas id="chartByHour"></canvas></div>
-        </div>
-
-        <!-- Row 3: Heatmap (full width, dưới biểu đồ giờ) -->
-        <div class="section-block" style="margin-bottom:16px">
-          <div class="section-block-title">🌡️ Heatmap GD theo giờ × ngày</div>
-          <div style="padding:16px;overflow-x:auto" id="txHeatmap"></div>
+        <!-- Row 2: Phân bổ theo giờ + Heatmap (cùng 1 hàng) -->
+        <div class="tx-grid-2" style="margin-bottom:16px">
+          <div class="section-block">
+            <div class="section-block-title">🕐 Phân bổ giao dịch theo giờ</div>
+            <div style="padding:16px;height:340px;position:relative"><canvas id="chartByHour"></canvas></div>
+          </div>
+          <div class="section-block">
+            <div class="section-block-title">🌡️ Heatmap GD theo giờ × ngày</div>
+            <div style="padding:12px 16px;overflow-y:auto;max-height:380px" id="txHeatmap"></div>
+          </div>
         </div>
 
         <!-- Row 4: Thiết bị + Top 20 Merchant -->
