@@ -83,10 +83,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .th-left{display:flex;align-items:center;gap:16px}
 .th-title{font-size:18px;font-weight:700;color:var(--text)}
 .th-sub{font-size:12px;color:var(--text3);margin-top:1px}
-.sync-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:monospace}
+.sync-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600}
 .sync-pill.ok{background:var(--green-light);color:var(--green)}
 .sync-pill.err{background:var(--red-light);color:var(--red)}
 .sync-pill.loading{background:var(--primary-light);color:var(--primary)}
+.conn-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.conn-dot.ok{background:#10B981;animation:blink 1.8s ease-in-out infinite}
+.conn-dot.err{background:#EF4444}
+.conn-dot.loading{background:#F59E0B;animation:blink .8s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 .th-right{display:flex;align-items:center;gap:8px}
 .th-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--white);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--font)}
 .th-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
@@ -525,7 +530,7 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
           </div>
           <div class="section-block">
             <div class="section-block-title">🌡️ Heatmap GD theo giờ × ngày</div>
-            <div style="padding:12px 16px;overflow-y:auto;max-height:380px" id="txHeatmap"></div>
+            <div style="padding:12px 16px;overflow-y:auto;max-height:380px;position:relative" id="txHeatmap"></div>
           </div>
         </div>
 
@@ -536,9 +541,9 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
             <div style="padding:16px;flex:1;position:relative"><canvas id="chartByDevice"></canvas></div>
           </div>
           <div class="section-block" style="display:flex;flex-direction:column;max-height:380px">
-            <div class="section-block-title">🏆 Top 20 Merchant</div>
+            <div class="section-block-title" style="flex-shrink:0">🏆 Top 20 Merchant</div>
             <div class="tbl-scroll" style="flex:1;overflow-y:auto">
-              <table class="rpt-tbl"><thead><tr>
+              <table class="rpt-tbl" style="position:relative"><thead style="position:sticky;top:0;z-index:2"><tr>
                 <th>#</th><th style="text-align:center">TID</th><th style="text-align:center">Merchant</th><th>Số GD</th><th style="text-align:center">Doanh thu</th>
               </tr></thead><tbody id="topMerchantBody"></tbody></table>
             </div>
@@ -1220,9 +1225,11 @@ function now(){ return new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',min
 function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function showLoading(on){ document.getElementById('tblLoading').style.display=on?'flex':'none'; }
 function setSyncStatus(type, msg){
-  var el=document.getElementById('syncStatus');
-  el.className='sync-status '+type;
-  el.innerHTML='● '+msg;
+  var el = document.getElementById('syncStatus');
+  if (!el) return;
+  var labels = { ok:'Đã kết nối', err:'Mất kết nối', loading:'Đang kết nối' };
+  el.className = 'sync-pill ' + type;
+  el.innerHTML = '<span class="conn-dot '+type+'"></span>' + (labels[type] || msg);
 }
 function showToast(msg, type){
   var el=document.getElementById('toast');
@@ -1775,7 +1782,7 @@ function renderHeatmap(hourlyRows) {
     return val/maxVal > 0.45 ? '#fff' : '#7B341E';
   }
 
-  var html = '<div style="display:flex;gap:0;align-items:flex-start;width:100%">';
+  var html = '<div style="display:flex;gap:0;align-items:flex-start;width:100%;position:sticky;top:0;z-index:3;background:var(--white);padding-bottom:2px">';
   html += '<div style="flex-shrink:0;width:72px"></div>';
   rows.forEach(function(r){
     html += '<div style="flex:1;text-align:center;font-size:10px;font-weight:700;color:var(--text2);padding-bottom:4px;min-width:0">'+r.date.substring(0,5)+'</div>';
