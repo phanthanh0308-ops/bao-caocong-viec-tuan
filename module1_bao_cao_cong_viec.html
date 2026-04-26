@@ -534,11 +534,10 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
           <div class="section-block">
             <div class="section-block-title">📱 Theo dòng thiết bị</div>
             <div style="padding:16px;height:240px;position:relative"><canvas id="chartByDevice"></canvas></div>
-            <div id="txDeviceAvgTable" style="padding:0 16px 16px;display:flex;flex-direction:column;gap:8px"></div>
           </div>
           <div class="section-block">
             <div class="section-block-title">🏆 Top 20 Merchant</div>
-            <div class="tbl-scroll" style="max-height:320px;overflow-y:auto">
+            <div class="tbl-scroll" style="max-height:480px;overflow-y:auto">
               <table class="rpt-tbl"><thead><tr>
                 <th>#</th><th style="text-align:left">TID</th><th style="text-align:left">Merchant</th><th>Số GD</th><th>Doanh thu</th>
               </tr></thead><tbody id="topMerchantBody"></tbody></table>
@@ -1654,27 +1653,36 @@ function renderFullDashboard(results) {
     }
   });
 
-  // 5. Top 20 Merchant với so sánh tuần trước
+  // 5. Top 20 Merchant với so sánh tuần trước (GD + Doanh thu)
   var merchants    = (results.merchant||{}).merchants || [];
   var prevMerchMap = {};
-  ((results.prevMerchant||{}).merchants || []).forEach(function(m){ prevMerchMap[m.tid] = m.count; });
+  var prevAmountMap2 = {};
+  ((results.prevMerchant||{}).merchants || []).forEach(function(m){
+    prevMerchMap[m.tid]   = m.count;
+    prevAmountMap2[m.tid] = m.amount||0;
+  });
 
   document.getElementById('topMerchantBody').innerHTML = merchants.map(function(m,i){
     var prevCnt = prevMerchMap[m.tid] || 0;
-    var cmpHtml = '';
+    var prevAmt = prevAmountMap2[m.tid] || 0;
+    var cntHtml = '';
     if (prevCnt > 0) {
-      var delta = m.count - prevCnt;
-      var pct   = Math.round(Math.abs(delta) / prevCnt * 100);
-      var arrow = delta >= 0 ? '▲' : '▼';
-      var color = delta >= 0 ? '#10B981' : '#EF4444';
-      cmpHtml = ' <span style="font-size:10px;font-weight:700;color:'+color+'">'+arrow+' '+pct+'%</span>';
+      var d1 = m.count - prevCnt;
+      var p1 = Math.round(Math.abs(d1)/prevCnt*100);
+      cntHtml = ' <span style="font-size:10px;font-weight:700;color:'+(d1>=0?'#10B981':'#EF4444')+'">'+(d1>=0?'▲':'▼')+' '+p1+'%</span>';
+    }
+    var amtHtml = '';
+    if (prevAmt > 0) {
+      var d2 = (m.amount||0) - prevAmt;
+      var p2 = Math.round(Math.abs(d2)/prevAmt*100);
+      amtHtml = ' <span style="font-size:10px;font-weight:700;color:'+(d2>=0?'#10B981':'#EF4444')+'">'+(d2>=0?'▲':'▼')+' '+p2+'%</span>';
     }
     return '<tr>'
       +'<td style="text-align:center" class="td-num">'+(i+1)+'</td>'
       +'<td style="text-align:center;font-family:monospace;font-size:11px;color:var(--primary)">'+m.tid+'</td>'
       +'<td style="text-align:left;font-size:12px">'+m.merchant+'</td>'
-      +'<td style="text-align:center;font-weight:700">'+m.count.toLocaleString('vi-VN')+cmpHtml+'</td>'
-      +'<td style="text-align:right;font-weight:600;color:var(--primary)">'+formatVND(m.amount||0)+'</td>'
+      +'<td style="text-align:center;font-weight:700">'+m.count.toLocaleString('vi-VN')+cntHtml+'</td>'
+      +'<td style="text-align:right;font-weight:600;color:var(--primary)">'+formatVND(m.amount||0)+amtHtml+'</td>'
       +'</tr>';
   }).join('');
 
@@ -1708,7 +1716,7 @@ function renderFullDashboard(results) {
       +'<td style="text-align:center;font-weight:700">'+(r.total||0).toLocaleString('vi-VN')+'</td>'
       +'<td style="text-align:center;color:var(--green)">'+(r.success||0).toLocaleString('vi-VN')+'</td>'
       +'<td style="text-align:center;color:var(--amber)">'+(r.void||0).toLocaleString('vi-VN')+'</td>'
-      +'<td style="text-align:center;font-weight:600">'+formatVND(r.amount||0)+amtDelta+'</td>'
+      +'<td style="text-align:center;font-weight:600">'+formatVND(r.amount||0)+'</td>'
       +'<td style="text-align:center">'+(r.VISA||0).toLocaleString('vi-VN')+'</td>'
       +'<td style="text-align:center">'+(r.MASTERCARD||0).toLocaleString('vi-VN')+'</td>'
       +'<td style="text-align:center">'+(r.NAPAS||0).toLocaleString('vi-VN')+'</td>'
@@ -1767,25 +1775,22 @@ function renderHeatmap(hourlyRows) {
     return val/maxVal > 0.45 ? '#fff' : '#7B341E';
   }
 
-  var colW = 52;
-  var html = '<div style="display:flex;gap:0;align-items:flex-start">';
-  // Label cột giờ (header)
+  var html = '<div style="display:flex;gap:0;align-items:flex-start;width:100%">';
   html += '<div style="flex-shrink:0;width:72px"></div>';
   rows.forEach(function(r){
-    html += '<div style="width:'+colW+'px;text-align:center;font-size:10px;font-weight:700;color:var(--text2);padding-bottom:4px;flex-shrink:0">'+r.date.substring(0,5)+'</div>';
+    html += '<div style="flex:1;text-align:center;font-size:10px;font-weight:700;color:var(--text2);padding-bottom:4px;min-width:0">'+r.date.substring(0,5)+'</div>';
   });
   html += '</div>';
 
-  // Rows = giờ
   HOURS.forEach(function(hh){
-    html += '<div style="display:flex;gap:0;align-items:center;margin-bottom:2px">';
+    html += '<div style="display:flex;gap:0;align-items:center;margin-bottom:1px;width:100%">';
     html += '<div style="flex-shrink:0;width:72px;font-size:11px;color:var(--text2);text-align:right;padding-right:8px;font-weight:600">'+hh+':00</div>';
     rows.forEach(function(r){
       var val = r.byHour[hh]||0;
       var ttl = r.date+' '+hh+'h: '+val.toLocaleString('vi-VN')+' GD';
       var bg  = heatColor(val);
       var fc  = textColor(val);
-      html += '<div title="'+ttl+'" style="width:'+colW+'px;height:28px;background:'+bg+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:'+fc+';border:1px solid rgba(255,255,255,0.3);flex-shrink:0;cursor:default">'+(val>0?val:'')+'</div>';
+      html += '<div title="'+ttl+'" style="flex:1;height:26px;background:'+bg+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:'+fc+';border:1px solid rgba(255,255,255,0.3);cursor:default;min-width:0">'+(val>0?val:'')+'</div>';
     });
     html += '</div>';
   });
@@ -1860,19 +1865,7 @@ function renderDeviceAvg(deviceRows) {
     }
   });
 
-  // Bảng tóm tắt với % (bên dưới chart thiết bị)
-  document.getElementById('txDeviceAvgTable').innerHTML = TYPES.map(function(t,i){
-    var avg = avgData[i]; var pct = Math.round(avg/totalAvg*100);
-    var bar = '<div style="flex:1;height:6px;background:#F1F5F9;border-radius:3px;overflow:hidden">'
-      +'<div style="width:'+pct+'%;height:100%;background:'+COLORS[i]+';border-radius:3px"></div></div>';
-    return '<div style="display:flex;align-items:center;gap:8px">'
-      +'<div style="width:10px;height:10px;border-radius:2px;background:'+COLORS[i]+';flex-shrink:0"></div>'
-      +'<div style="font-size:12px;font-weight:600;width:70px">'+t+'</div>'
-      +bar
-      +'<div style="font-size:12px;font-weight:700;width:52px;text-align:right">'+avg.toLocaleString('vi-VN')+'</div>'
-      +'<div style="font-size:11px;color:var(--text2);width:36px;text-align:right;font-weight:700">'+pct+'%</div>'
-      +'</div>';
-  }).join('');
+
 }
 
 function formatVND(n) {
