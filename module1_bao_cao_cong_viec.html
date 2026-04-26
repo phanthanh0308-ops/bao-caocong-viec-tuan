@@ -279,7 +279,6 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
   .stats-grid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
 <body>
@@ -476,38 +475,28 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
     <div id="sec2" class="rpt-section">
       <div class="rpt-section-title">📊 Báo cáo Giao dịch</div>
 
-      <!-- UPLOAD BAR -->
-      <div class="new-week-bar" style="margin-bottom:16px;flex-wrap:wrap;gap:10px;align-items:center">
-        <span class="nwb-label">📁 Upload file ngày từ TMS:</span>
-        <label class="btn btn-sm btn-primary" style="cursor:pointer">
-          📂 Chọn file XLSX
-          <input type="file" id="txFileInput" accept=".xlsx,.xls" style="display:none" onchange="onTxFileSelected(this)">
-        </label>
-        <span id="txFileName" style="font-size:12px;color:var(--text2)">Chưa chọn file</span>
-        <button class="btn btn-sm btn-success" id="btnPushToSheet" onclick="pushDailyToSheet()" disabled style="margin-left:auto">☁ Đẩy lên Sheets</button>
-        <div id="txUploadStatus" style="width:100%;font-size:12px;color:var(--text3);display:none"></div>
-      </div>
-
-      <!-- PREVIEW SAU KHI ĐỌC FILE -->
-      <div id="txPreview" style="display:none;margin-bottom:16px">
-        <div class="section-block">
-          <div class="section-block-title">👁 Preview dữ liệu ngày <span id="txPreviewDate"></span></div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px">
-            <div style="text-align:center"><div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Tổng GD</div><div style="font-size:24px;font-weight:800" id="pvTotal">0</div></div>
-            <div style="text-align:center"><div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Thành công</div><div style="font-size:24px;font-weight:800;color:var(--green)" id="pvSuccess">0</div></div>
-            <div style="text-align:center"><div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Void (Hoàn tiền)</div><div style="font-size:24px;font-weight:800;color:var(--amber)" id="pvVoid">0</div></div>
-            <div style="text-align:center"><div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Doanh thu</div><div style="font-size:18px;font-weight:800;color:var(--primary)" id="pvAmount">0</div></div>
-          </div>
-          <div style="padding:0 16px 16px;display:flex;gap:8px;flex-wrap:wrap" id="pvCards"></div>
-        </div>
-      </div>
-
-      <!-- KPI TUẦN — hiện sau khi load báo cáo -->
+            <!-- KPI TUẦN — hiện sau khi load báo cáo -->
       <div class="stats-grid" id="txKpiGrid" style="display:none;margin-bottom:16px">
-        <div class="stat-card"><div class="stat-icon si-blue">🔢</div><div class="stat-body"><div class="stat-lbl">Tổng GD tuần</div><div class="stat-val" id="txTotal">0</div></div></div>
-        <div class="stat-card"><div class="stat-icon si-green">✅</div><div class="stat-body"><div class="stat-lbl">Thành công</div><div class="stat-val" id="txSuccess" style="color:var(--green)">0</div><div class="stat-sub" id="txRate"></div></div></div>
-        <div class="stat-card"><div class="stat-icon si-amber">🔄</div><div class="stat-body"><div class="stat-lbl">Void (Hoàn tiền)</div><div class="stat-val" id="txVoid" style="color:var(--amber)">0</div></div></div>
-        <div class="stat-card"><div class="stat-icon si-amber">💰</div><div class="stat-body"><div class="stat-lbl">Doanh thu</div><div class="stat-val" id="txAmount" style="font-size:18px">0</div></div></div>
+        <div class="stat-card"><div class="stat-icon si-blue">🔢</div><div class="stat-body">
+          <div class="stat-lbl">Tổng GD tuần</div>
+          <div class="stat-val" id="txTotal">0</div>
+          <div class="stat-sub" id="txTotalCmp" style="font-size:11px;color:var(--text2)"></div>
+        </div></div>
+        <div class="stat-card"><div class="stat-icon si-green">✅</div><div class="stat-body">
+          <div class="stat-lbl">Thành công</div>
+          <div class="stat-val" id="txSuccess" style="color:var(--green)">0</div>
+          <div class="stat-sub" id="txSuccessCmp" style="font-size:11px;color:var(--text2)"></div>
+        </div></div>
+        <div class="stat-card"><div class="stat-icon si-amber">🔄</div><div class="stat-body">
+          <div class="stat-lbl">Void (Hoàn tiền)</div>
+          <div class="stat-val" id="txVoid" style="color:var(--amber)">0</div>
+          <div class="stat-sub" id="txVoidCmp" style="font-size:11px;color:var(--text2)"></div>
+        </div></div>
+        <div class="stat-card"><div class="stat-icon si-amber">💰</div><div class="stat-body">
+          <div class="stat-lbl">Doanh thu</div>
+          <div class="stat-val" id="txAmount" style="font-size:18px">0</div>
+          <div class="stat-sub" id="txAmountCmp" style="font-size:11px;color:var(--text2)"></div>
+        </div></div>
       </div>
 
       <!-- CHARTS -->
@@ -535,7 +524,7 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
             <div style="padding:16px;height:220px;position:relative"><canvas id="chartByDevice"></canvas></div>
           </div>
           <div class="section-block">
-            <div class="section-block-title">🏆 Top 10 Merchant</div>
+            <div class="section-block-title">🏆 Top 20 Merchant</div>
             <div class="tbl-scroll" style="max-height:260px;overflow-y:auto">
               <table class="rpt-tbl"><thead><tr>
                 <th>#</th><th style="text-align:left">TID</th><th style="text-align:left">Merchant</th><th>Số GD</th><th>Doanh thu</th>
@@ -1456,122 +1445,6 @@ function txLoadLastWeek() {
   loadWeeklyReport(fmt(mon), fmt(sun));
 }
 
-// ── ĐỌC FILE XLSX ────────────────────────────
-function onTxFileSelected(input) {
-  var file = input.files[0];
-  if (!file) return;
-  document.getElementById('txFileName').textContent = file.name;
-  document.getElementById('txUploadStatus').style.display = 'block';
-  document.getElementById('txUploadStatus').textContent = '⏳ Đang đọc file...';
-
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var wb   = XLSX.read(e.target.result, { type: 'array' });
-      var sh   = wb.Sheets[wb.SheetNames[0]];
-      var raw  = XLSX.utils.sheet_to_json(sh, { header: 1, defval: '' });
-
-      var hdrIdx = -1;
-      for (var i = 0; i < Math.min(10, raw.length); i++) {
-        if (raw[i].indexOf('Trạng thái thanh toán') >= 0) { hdrIdx = i; break; }
-      }
-      if (hdrIdx < 0) { alert('Không tìm thấy header!'); return; }
-
-      var headers = raw[hdrIdx];
-      var iSta     = headers.indexOf('Trạng thái thanh toán');
-      var iAmt     = headers.indexOf('Số tiền thanh toán');
-      var iCard    = headers.indexOf('Loại thẻ');
-      var iDate    = headers.indexOf('Ngày tạo đơn');
-      var iTID     = headers.indexOf('TID');
-      var iDev     = headers.indexOf('Device Serial No');
-      var iOrderSta= headers.indexOf('Trạng thái đơn hàng'); // Void = Đã hoàn tiền
-
-      var s = {
-        total:0, success:0, void:0, amount:0,
-        byCard:{'VISA':0,'MASTERCARD':0,'NAPAS':0,'JCB':0,'UNIONPAY':0},
-        byHour:{}, byDevice:{'Sunmi P1':0,'Sunmi P2':0,'Nexgo':0,'Nayax':0,'Khac':0},
-        byTID:{}, date:''
-      };
-      for (var h=0; h<24; h++) s.byHour[String(h).padStart(2,'0')]=0;
-
-      var VOID_STA = ['VOID','REVERSED','ĐÃ VOID','ĐÃ HOÀN TIỀN','6 - ĐÃ VOID'];
-
-      for (var r = hdrIdx+1; r < raw.length; r++) {
-        var row = raw[r]; if (!row || !row[iSta]) continue;
-        var sta       = String(row[iSta]||'').trim().toUpperCase();
-        var orderSta  = iOrderSta >= 0 ? String(row[iOrderSta]||'').trim().toUpperCase() : '';
-        var amt       = parseFloat(String(row[iAmt]||'0').replace(/[^\d.]/g,''))||0;
-        var card      = String(row[iCard]||'').trim().toUpperCase();
-        var dateStr   = String(row[iDate]||'').substring(0,10);
-        var tid       = String(row[iTID]||'').trim();
-        var dev       = String(row[iDev]||'').trim().toUpperCase();
-        if (!s.date && dateStr) s.date = dateStr;
-
-        s.total++;
-        // Void = Trạng thái đơn hàng là "Đã hoàn tiền"
-        var isVoid = orderSta === 'ĐÃ HOÀN TIỀN' || orderSta === 'DA HOAN TIEN' || orderSta === 'REFUNDED';
-        if (isVoid) {
-          s.void++;
-        } else {
-          s.success++; s.amount += amt;
-        }
-        if (s.byCard[card] !== undefined) s.byCard[card]++;
-
-        // Giờ
-        var hStr = String(row[iDate]||'').match(/(\d{2}):\d{2}/);
-        var hr = hStr ? hStr[1] : '00';
-        s.byHour[hr] = (s.byHour[hr]||0) + 1;
-
-        // Thiết bị
-        var dt = dev.startsWith('PE')?'Sunmi P1':dev.startsWith('PB')?'Sunmi P2':dev.startsWith('N82')?'Nexgo':dev.startsWith('F20')?'Nayax':'Khac';
-        s.byDevice[dt]++;
-
-        // TID
-        if (tid) { s.byTID[tid]=(s.byTID[tid]||0)+1; }
-      }
-      txDailySummary = s;
-
-      // Preview
-      document.getElementById('txPreviewDate').textContent = s.date;
-      document.getElementById('pvTotal').textContent   = s.total.toLocaleString('vi-VN');
-      document.getElementById('pvSuccess').textContent = s.success.toLocaleString('vi-VN');
-      document.getElementById('pvVoid').textContent    = s.void.toLocaleString('vi-VN');
-      document.getElementById('pvAmount').textContent  = formatVND(s.amount);
-      var cardColors = {VISA:'#1A56DB',MASTERCARD:'#E74694',NAPAS:'#0E9F6E',JCB:'#057A55',UNIONPAY:'#C81E1E'};
-      document.getElementById('pvCards').innerHTML = Object.keys(s.byCard).map(function(c){
-        return '<span style="background:'+(cardColors[c]||'#5B47E0')+';color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700">'+c+': '+s.byCard[c].toLocaleString('vi-VN')+'</span>';
-      }).join('');
-
-      document.getElementById('txPreview').style.display='block';
-      document.getElementById('txPlaceholder').style.display='none';
-      document.getElementById('btnPushToSheet').disabled=false;
-      document.getElementById('txUploadStatus').textContent='✅ Đọc xong — '+s.total.toLocaleString('vi-VN')+' GD ngày '+s.date;
-    } catch(err) {
-      document.getElementById('txUploadStatus').textContent='❌ Lỗi: '+err.message;
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-// ── ĐẨY LÊN SHEETS ───────────────────────────
-function pushDailyToSheet() {
-  if (!txDailySummary) return;
-  var btn = document.getElementById('btnPushToSheet');
-  btn.disabled=true; btn.textContent='⏳ Đang đẩy...';
-  document.getElementById('txUploadStatus').textContent='⏳ Đang lưu lên Google Sheets...';
-  apiGet({action:'saveDailySummary',date:txDailySummary.date,summary:JSON.stringify(txDailySummary)},
-    function(data,err) {
-      btn.disabled=false; btn.textContent='☁ Đẩy lên Sheets';
-      if (err||(data&&data.error)) {
-        document.getElementById('txUploadStatus').textContent='❌ '+((data&&data.error)||err);
-      } else {
-        var m=data.updated?'🔄 Cập nhật':'✅ Lưu mới';
-        document.getElementById('txUploadStatus').textContent=m+' ngày '+txDailySummary.date+' thành công!';
-        showToast(m+' dữ liệu ngày '+txDailySummary.date,'ok');
-      }
-    });
-}
-
 // ── XEM BÁO CÁO TUẦN ─────────────────────────
 function loadWeeklyReport(fromStr, toStr) {
   var from = fromStr || '';
@@ -1588,40 +1461,52 @@ function loadWeeklyReport(fromStr, toStr) {
   document.getElementById('txCharts').style.display    = 'none';
   document.getElementById('txPlaceholder').style.display = 'none';
 
-  // Hien loading
-  var loadEl = document.createElement('div');
+  var loadEl = document.getElementById('txLoading') || document.createElement('div');
   loadEl.id = 'txLoading';
   loadEl.style.cssText = 'text-align:center;padding:40px;color:var(--text2);font-size:14px';
   loadEl.innerHTML = '⏳ Đang tải dữ liệu...';
-  var existLoad = document.getElementById('txLoading');
-  if (existLoad) existLoad.remove();
-  document.getElementById('sec2').appendChild(loadEl);
+  if (!document.getElementById('txLoading')) document.getElementById('sec2').appendChild(loadEl);
+
+  // Tính khoảng tuần trước
+  var fromD = new Date(from), toD = new Date(to);
+  var diff  = Math.round((toD - fromD) / 86400000) + 1; // số ngày trong tuần
+  function shiftDate(d, days) {
+    var nd = new Date(d); nd.setDate(nd.getDate() + days);
+    return nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0')+'-'+String(nd.getDate()).padStart(2,'0');
+  }
+  var prevFrom = shiftDate(fromD, -diff);
+  var prevTo   = shiftDate(toD,   -diff);
 
   var done = 0; var results = {};
   function check() {
     done++;
-    console.log('[GD] callback done:', done + '/4');
-    if (done === 4) {
+    if (done === 5) {
       var ld = document.getElementById('txLoading');
       if (ld) ld.remove();
       renderFullDashboard(results);
     }
   }
 
-  apiGet({action:'getWeeklyReport', from:toDMY(from), to:toDMY(to)},
-    function(d,e){ console.log('[GD] weekly:', d, e); results.weekly=d||{}; check(); });
+  apiGet({action:'getWeeklyReport', from:toDMY(from),     to:toDMY(to)},
+    function(d,e){ results.weekly=d||{}; check(); });
+  apiGet({action:'getWeeklyReport', from:toDMY(prevFrom), to:toDMY(prevTo)},
+    function(d,e){ results.prevWeekly=d||{}; check(); });
   apiGet({action:'getHourlyReport', from:toDMY(from), to:toDMY(to)},
-    function(d,e){ console.log('[GD] hourly:', d&&d.rows&&d.rows.length); results.hourly=d||{}; check(); });
+    function(d,e){ results.hourly=d||{}; check(); });
   apiGet({action:'getDeviceReport', from:toDMY(from), to:toDMY(to)},
-    function(d,e){ console.log('[GD] device:', d); results.device=d||{}; check(); });
-  apiGet({action:'getTopMerchants', from:toDMY(from), to:toDMY(to), limit:10},
-    function(d,e){ console.log('[GD] merchant:', d); results.merchant=d||{}; check(); });
+    function(d,e){ results.device=d||{}; check(); });
+  apiGet({action:'getTopMerchants', from:toDMY(from), to:toDMY(to), limit:20},
+    function(d,e){ results.merchant=d||{}; check(); });
 }
 
 function renderFullDashboard(results) {
   var weekly = results.weekly || {};
-  var rows   = weekly.rows   || [];
+  var rows   = (weekly.rows   || []).slice().sort(function(a,b){
+    // Sắp xếp tăng dần theo ngày (đầu tuần → cuối tuần)
+    return parseVNDate(a.date) - parseVNDate(b.date);
+  });
   var totals = weekly.totals || {};
+  var prev   = (results.prevWeekly||{}).totals || {};
 
   if (!rows.length) {
     document.getElementById('txPlaceholder').style.display='block';
@@ -1629,38 +1514,52 @@ function renderFullDashboard(results) {
     return;
   }
 
+  // ── Hàm so sánh ──────────────────────────────
+  function cmpHtml(cur, pre, isAmount) {
+    if (!pre || pre === 0) return '';
+    var delta = cur - pre;
+    var pct   = Math.abs(Math.round(delta / pre * 100 * 10) / 10);
+    var arrow = delta >= 0 ? '▲' : '▼';
+    var color = delta >= 0 ? 'var(--green)' : 'var(--red)';
+    var preLabel = isAmount ? formatVND(pre) : pre.toLocaleString('vi-VN');
+    var deltaLabel = (delta >= 0 ? '+' : '') + (isAmount ? formatVND(delta) : delta.toLocaleString('vi-VN'));
+    return '<span style="color:var(--text2)">Tuần trước: '+preLabel+'</span> '
+      +'<span style="color:'+color+';font-weight:700">'+arrow+' '+pct+'%</span>';
+  }
+
   // KPI
-  document.getElementById('txKpiGrid').style.display='grid';
-  document.getElementById('txTotal').textContent   = totals.total.toLocaleString('vi-VN');
-  document.getElementById('txSuccess').textContent = totals.success.toLocaleString('vi-VN');
-  document.getElementById('txVoid').textContent    = (totals.void||0).toLocaleString('vi-VN');
-  document.getElementById('txAmount').textContent  = formatVND(totals.amount);
-  document.getElementById('txRate').textContent    = totals.total>0 ? Math.round(totals.success/totals.total*100)+'% thành công' : '';
+  document.getElementById('txKpiGrid').style.display = 'grid';
+  document.getElementById('txTotal').textContent    = (totals.total||0).toLocaleString('vi-VN');
+  document.getElementById('txSuccess').textContent  = (totals.success||0).toLocaleString('vi-VN');
+  document.getElementById('txVoid').textContent     = (totals.void||0).toLocaleString('vi-VN');
+  document.getElementById('txAmount').textContent   = formatVND(totals.amount||0);
+  document.getElementById('txTotalCmp').innerHTML   = cmpHtml(totals.total||0,   prev.total||0,   false);
+  document.getElementById('txSuccessCmp').innerHTML = cmpHtml(totals.success||0, prev.success||0, false);
+  document.getElementById('txVoidCmp').innerHTML    = cmpHtml(totals.void||0,    prev.void||0,    false);
+  document.getElementById('txAmountCmp').innerHTML  = cmpHtml(totals.amount||0,  prev.amount||0,  true);
 
-  document.getElementById('txCharts').style.display='block';
+  document.getElementById('txCharts').style.display = 'block';
 
-  // 1. Bar chart theo ngày (có số trên cột)
-  var labels  = rows.map(function(r){ return r.date; });
-  var sucData = rows.map(function(r){ return r.success; });
-  var voidData= rows.map(function(r){ return r.void||0; });
+  // 1. Bar chart theo ngày (tăng dần)
+  var labels   = rows.map(function(r){ return r.date; });
+  var sucData  = rows.map(function(r){ return r.success||0; });
+  var voidData = rows.map(function(r){ return r.void||0; });
   if (txChartDate) txChartDate.destroy();
   txChartDate = new Chart(document.getElementById('chartByDate'), {
     type:'bar',
     data:{ labels:labels, datasets:[
-      { label:'Thành công', data:sucData, backgroundColor:'#10B981', borderRadius:4 },
-      { label:'Void/Hoàn', data:voidData, backgroundColor:'#F59E0B', borderRadius:4 }
+      { label:'Thành công', data:sucData,  backgroundColor:'#10B981', borderRadius:4 },
+      { label:'Void/Hoàn',  data:voidData, backgroundColor:'#F59E0B', borderRadius:4 }
     ]},
     options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{position:'top'},
-        datalabels:{ display:false }
-      },
+      plugins:{ legend:{position:'top'} },
       scales:{ x:{grid:{display:false}}, y:{beginAtZero:true,
         ticks:{ callback:function(v){ return v.toLocaleString('vi-VN'); } }
       }}
     }
   });
 
-  // 2. Bar chart loại thẻ có tham số đối chiếu
+  // 2. Bar chart loại thẻ
   var cardKeys   = ['VISA','MASTERCARD','NAPAS','JCB','UNIONPAY'];
   var cardColors = ['#1A56DB','#E74694','#0E9F6E','#057A55','#C81E1E'];
   var cardData   = cardKeys.map(function(k){ return totals[k]||0; });
@@ -1671,8 +1570,8 @@ function renderFullDashboard(results) {
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false},
         tooltip:{ callbacks:{ label:function(ctx){
-          var pct = totals.total>0?Math.round(ctx.parsed.y/totals.total*100):0;
-          return ctx.parsed.y.toLocaleString('vi-VN')+' GD ('+pct+'%)';
+          var tot = totals.total||1;
+          return ctx.parsed.y.toLocaleString('vi-VN')+' GD ('+Math.round(ctx.parsed.y/tot*100)+'%)';
         }}}
       },
       scales:{ x:{grid:{display:false}}, y:{beginAtZero:true,
@@ -1682,13 +1581,13 @@ function renderFullDashboard(results) {
   });
 
   // 3. Bar chart theo giờ
-  var hourly = (results.hourly||{}).totals || {};
-  var hrs = []; for(var h=0;h<24;h++) hrs.push(String(h).padStart(2,'0'));
-  var hourData = hrs.map(function(h){ return hourly[h]||0; });
+  var hourly   = (results.hourly||{}).totals || {};
+  var hrs      = []; for(var h=0;h<24;h++) hrs.push(String(h).padStart(2,'0'));
+  var hourData = hrs.map(function(hh){ return hourly[hh]||0; });
   if (txChartHour) txChartHour.destroy();
   txChartHour = new Chart(document.getElementById('chartByHour'), {
     type:'bar',
-    data:{ labels:hrs.map(function(h){ return h+'h'; }), datasets:[{ label:'GD', data:hourData, backgroundColor:'#5B47E0', borderRadius:2 }]},
+    data:{ labels:hrs.map(function(hh){ return hh+'h'; }), datasets:[{ label:'GD', data:hourData, backgroundColor:'#5B47E0', borderRadius:2 }]},
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false} },
       scales:{ x:{grid:{display:false}}, y:{beginAtZero:true,
@@ -1708,9 +1607,8 @@ function renderFullDashboard(results) {
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false},
         tooltip:{ callbacks:{ label:function(ctx){
-          var tot = devTypes.reduce(function(a,d){ return a+(devData[d]||0); },0);
-          var pct = tot>0?Math.round(ctx.parsed.y/tot*100):0;
-          return ctx.parsed.y.toLocaleString('vi-VN')+' GD ('+pct+'%)';
+          var tot = devTypes.reduce(function(a,d){ return a+(devData[d]||0); },0)||1;
+          return ctx.parsed.y.toLocaleString('vi-VN')+' GD ('+Math.round(ctx.parsed.y/tot*100)+'%)';
         }}}
       },
       scales:{ x:{grid:{display:false}}, y:{beginAtZero:true,
@@ -1719,35 +1617,51 @@ function renderFullDashboard(results) {
     }
   });
 
-  // 5. Top merchant table
+  // 5. Top 20 Merchant
   var merchants = (results.merchant||{}).merchants || [];
   document.getElementById('topMerchantBody').innerHTML = merchants.map(function(m,i){
-    return '<tr><td class="td-num">'+(i+1)+'</td>'
-      +'<td style="font-family:monospace;font-size:11px;color:var(--primary)">'+m.tid+'</td>'
-      +'<td style="font-size:12px">'+m.merchant+'</td>'
+    return '<tr>'
+      +'<td style="text-align:center" class="td-num">'+(i+1)+'</td>'
+      +'<td style="text-align:center;font-family:monospace;font-size:11px;color:var(--primary)">'+m.tid+'</td>'
+      +'<td style="text-align:left;font-size:12px">'+m.merchant+'</td>'
       +'<td style="text-align:center;font-weight:700">'+m.count.toLocaleString('vi-VN')+'</td>'
       +'<td style="text-align:right;font-weight:600;color:var(--primary)">'+formatVND(m.amount||0)+'</td>'
       +'</tr>';
   }).join('');
 
-  // 6. Bảng chi tiết theo ngày
+  // 6. Chi tiết theo ngày (bỏ %, căn giữa)
   document.getElementById('txDailyBody').innerHTML = rows.map(function(r){
-    var rate = r.total>0?Math.round(r.success/r.total*100):0;
     return '<tr>'
       +'<td style="font-weight:600">'+r.date+'</td>'
-      +'<td style="text-align:center;font-weight:700">'+r.total.toLocaleString('vi-VN')+'</td>'
-      +'<td style="text-align:center;color:var(--green)">'+r.success.toLocaleString('vi-VN')
-        +' <span style="font-size:10px;color:var(--text2)">('+rate+'%)</span></td>'
+      +'<td style="text-align:center;font-weight:700">'+(r.total||0).toLocaleString('vi-VN')+'</td>'
+      +'<td style="text-align:center;color:var(--green)">'+(r.success||0).toLocaleString('vi-VN')+'</td>'
       +'<td style="text-align:center;color:var(--amber)">'+(r.void||0).toLocaleString('vi-VN')+'</td>'
-      +'<td style="text-align:right;font-weight:600">'+formatVND(r.amount)+'</td>'
-      +'<td style="text-align:center">'+r.VISA.toLocaleString('vi-VN')+'</td>'
-      +'<td style="text-align:center">'+r.MASTERCARD.toLocaleString('vi-VN')+'</td>'
-      +'<td style="text-align:center">'+r.NAPAS.toLocaleString('vi-VN')+'</td>'
-      +'<td style="text-align:center">'+r.JCB.toLocaleString('vi-VN')+'</td>'
-      +'<td style="text-align:center">'+r.UNIONPAY.toLocaleString('vi-VN')+'</td>'
+      +'<td style="text-align:right;font-weight:600">'+formatVND(r.amount||0)+'</td>'
+      +'<td style="text-align:center">'+(r.VISA||0).toLocaleString('vi-VN')+'</td>'
+      +'<td style="text-align:center">'+(r.MASTERCARD||0).toLocaleString('vi-VN')+'</td>'
+      +'<td style="text-align:center">'+(r.NAPAS||0).toLocaleString('vi-VN')+'</td>'
+      +'<td style="text-align:center">'+(r.JCB||0).toLocaleString('vi-VN')+'</td>'
+      +'<td style="text-align:center">'+(r.UNIONPAY||0).toLocaleString('vi-VN')+'</td>'
       +'</tr>';
   }).join('');
 }
+
+// Parse DD/MM/YYYY → timestamp để sort
+function parseVNDate(str) {
+  if (!str) return 0;
+  var p = str.split('/');
+  return p.length === 3 ? new Date(+p[2], +p[1]-1, +p[0]).getTime() : 0;
+}
+
+  // KPI
+  document.getElementById('txKpiGrid').style.display='grid';
+  document.getElementById('txTotal').textContent   = totals.total.toLocaleString('vi-VN');
+  document.getElementById('txSuccess').textContent = totals.success.toLocaleString('vi-VN');
+  document.getElementById('txVoid').textContent    = (totals.void||0).toLocaleString('vi-VN');
+  document.getElementById('txAmount').textContent  = formatVND(totals.amount);
+  document.getElementById('txRate').textContent    = totals.total>0 ? Math.round(totals.success/totals.total*100)+'% thành công' : '';
+
+  document.getElementById('txCharts').style.display='block';
 
 function formatVND(n) {
   if (!n||n===0) return '0';
@@ -1772,121 +1686,6 @@ function txLoadLastWeek() {
   var sun = new Date(mon); sun.setDate(mon.getDate() + 6);
   function fmt(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   loadWeeklyReport(fmt(mon), fmt(sun));
-}
-
-// ── ĐỌC FILE XLSX BẰNG SHEETJS ──────────────────
-function onTxFileSelected(input) {
-  var file = input.files[0];
-  if (!file) return;
-  document.getElementById('txFileName').textContent = file.name;
-  document.getElementById('txUploadStatus').style.display = 'block';
-  document.getElementById('txUploadStatus').textContent = '⏳ Đang đọc file...';
-
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var wb = XLSX.read(e.target.result, { type: 'array' });
-      var sh = wb.Sheets[wb.SheetNames[0]];
-      var raw = XLSX.utils.sheet_to_json(sh, { header: 1, defval: '' });
-
-      // Tìm header row (có cột "Trạng thái")
-      var hdrIdx = -1;
-      for (var i = 0; i < Math.min(10, raw.length); i++) {
-        if (raw[i].indexOf('Trạng thái') >= 0 || raw[i].indexOf('Trang thai') >= 0) {
-          hdrIdx = i; break;
-        }
-      }
-      if (hdrIdx < 0) { alert('Không tìm thấy header trong file!'); return; }
-
-      var headers = raw[hdrIdx];
-      var iDate   = headers.indexOf('Ngày tạo');
-      var iAmt    = headers.indexOf('Số tiền');
-      var iSta    = headers.indexOf('Trạng thái');
-      var iCard   = headers.indexOf('Loại thẻ');
-
-      // Aggregate
-      var summary = { total:0, success:0, failed:0, void:0, amount:0, byCard:{} };
-      var dateStr = '';
-
-      for (var r = hdrIdx + 1; r < raw.length; r++) {
-        var row = raw[r];
-        if (!row || !row[iSta]) continue;
-        var sta  = String(row[iSta] || '');
-        var amt  = parseFloat(String(row[iAmt] || '0').replace(/[^\d]/g,'')) || 0;
-        var card = String(row[iCard] || 'KHÁC').toUpperCase().trim();
-        var date = String(row[iDate] || '').substring(0, 10); // DD/MM/YYYY
-        if (!dateStr && date) dateStr = date;
-
-        summary.total++;
-        if (sta.indexOf('Thành công') >= 0 || sta.indexOf('3') === 0) {
-          summary.success++; summary.amount += amt;
-        } else if (sta.indexOf('void') >= 0 || sta.indexOf('6') === 0) {
-          summary.void++;
-        } else {
-          summary.failed++;
-        }
-        summary.byCard[card] = (summary.byCard[card] || 0) + 1;
-      }
-
-      summary.date = dateStr;
-      txDailySummary = summary;
-
-      // Hiển thị preview
-      document.getElementById('txPreviewDate').textContent = dateStr;
-      document.getElementById('pvTotal').textContent   = summary.total.toLocaleString('vi-VN');
-      document.getElementById('pvSuccess').textContent = summary.success.toLocaleString('vi-VN');
-      document.getElementById('pvFailed').textContent  = summary.failed.toLocaleString('vi-VN');
-      document.getElementById('pvVoid').textContent    = summary.void.toLocaleString('vi-VN');
-      document.getElementById('pvAmount').textContent  = formatVND(summary.amount);
-
-      // Card badges
-      var cardColors = { VISA:'#1A56DB', MASTERCARD:'#E74694', NAPAS:'#0E9F6E', JCB:'#057A55', UNIONPAY:'#C81E1E' };
-      document.getElementById('pvCards').innerHTML = Object.keys(summary.byCard).map(function(c){
-        return '<span style="background:'+(cardColors[c]||'#5B47E0')+';color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700">'
-          +c+': '+summary.byCard[c].toLocaleString('vi-VN')+'</span>';
-      }).join('');
-
-      document.getElementById('txPreview').style.display = 'block';
-      document.getElementById('txPlaceholder').style.display = 'none';
-      document.getElementById('btnPushToSheet').disabled = false;
-      document.getElementById('txUploadStatus').textContent = '✅ Đã đọc xong — ' + summary.total.toLocaleString('vi-VN') + ' giao dịch ngày ' + dateStr;
-
-    } catch(err) {
-      document.getElementById('txUploadStatus').textContent = '❌ Lỗi đọc file: ' + err.message;
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-// ── ĐẨY SUMMARY LÊN SHEETS ──────────────────────
-function pushDailyToSheet() {
-  if (!txDailySummary) return;
-  var btn = document.getElementById('btnPushToSheet');
-  btn.disabled = true; btn.textContent = '⏳ Đang đẩy...';
-  document.getElementById('txUploadStatus').textContent = '⏳ Đang lưu lên Google Sheets...';
-
-  apiGet({
-    action: 'saveDailySummary',
-    date: txDailySummary.date,
-    summary: JSON.stringify(txDailySummary)
-  }, function(data, err) {
-    btn.disabled = false; btn.textContent = '☁ Đẩy lên Sheets';
-    if (err || (data && data.error)) {
-      document.getElementById('txUploadStatus').textContent = '❌ Lỗi: ' + (err || data.error);
-    } else {
-      var msg = data.updated ? '🔄 Đã cập nhật' : '✅ Đã lưu';
-      document.getElementById('txUploadStatus').textContent = msg + ' ngày ' + txDailySummary.date + ' lên Sheets thành công!';
-      showToast(msg + ' dữ liệu ngày ' + txDailySummary.date, 'ok');
-    }
-  });
-}
-
-
-function formatVND(n) {
-  if (!n || n === 0) return '0';
-  if (n >= 1e9) return (n/1e9).toFixed(1) + ' tỷ';
-  if (n >= 1e6) return (n/1e6).toFixed(1) + ' tr';
-  return n.toLocaleString('vi-VN');
 }
 
 // ── TOROG LOGIN MODAL ──────────────────────────
