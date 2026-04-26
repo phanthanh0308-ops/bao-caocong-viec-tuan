@@ -1436,9 +1436,8 @@ function toDMY(s) {
 // Khi click tuần trong sidebar → nếu đang ở sec2, tự load báo cáo GD
 function txAutoLoadFromWeek(weekName) {
   var range = parseWeekRange(weekName);
-  if (!range) return;
-  document.getElementById('txRptFrom') && (document.getElementById('txRptFrom').value = range.from);
-  document.getElementById('txRptTo')   && (document.getElementById('txRptTo').value   = range.to);
+  if (!range) { console.warn('[GD] Khong parse duoc tuan:', weekName); return; }
+  console.log('[GD] Auto load tuan:', weekName, range);
   loadWeeklyReport(range.from, range.to);
 }
 
@@ -1575,31 +1574,48 @@ function pushDailyToSheet() {
 
 // ── XEM BÁO CÁO TUẦN ─────────────────────────
 function loadWeeklyReport(fromStr, toStr) {
-  // Nếu không truyền vào, đọc từ input (nếu có)
-  var from = fromStr || (document.getElementById('txRptFrom') && document.getElementById('txRptFrom').value);
-  var to   = toStr   || (document.getElementById('txRptTo')   && document.getElementById('txRptTo').value);
-  if (!from || !to) { showRptSection('sec2'); return; }
+  var from = fromStr || '';
+  var to   = toStr   || '';
+  if (!from || !to) {
+    console.warn('[GD] Khong co from/to:', from, to);
+    return;
+  }
 
-  document.getElementById('txError').style.display='none';
-  document.getElementById('txKpiGrid').style.display='none';
-  document.getElementById('txCharts').style.display='none';
-  document.getElementById('txPlaceholder').style.display='none';
+  console.log('[GD] loadWeeklyReport:', from, '->', to, '| apiUrl:', apiUrl);
 
-  // Gọi song song: weekly + hourly + device + merchant
+  document.getElementById('txError').style.display     = 'none';
+  document.getElementById('txKpiGrid').style.display   = 'none';
+  document.getElementById('txCharts').style.display    = 'none';
+  document.getElementById('txPlaceholder').style.display = 'none';
+
+  // Hien loading
+  var loadEl = document.createElement('div');
+  loadEl.id = 'txLoading';
+  loadEl.style.cssText = 'text-align:center;padding:40px;color:var(--text2);font-size:14px';
+  loadEl.innerHTML = '⏳ Đang tải dữ liệu...';
+  var existLoad = document.getElementById('txLoading');
+  if (existLoad) existLoad.remove();
+  document.getElementById('sec2').appendChild(loadEl);
+
   var done = 0; var results = {};
   function check() {
     done++;
-    if (done === 4) renderFullDashboard(results);
+    console.log('[GD] callback done:', done + '/4');
+    if (done === 4) {
+      var ld = document.getElementById('txLoading');
+      if (ld) ld.remove();
+      renderFullDashboard(results);
+    }
   }
 
-  apiGet({action:'getWeeklyReport',from:toDMY(from),to:toDMY(to)},
-    function(d,e){ results.weekly=d||{}; check(); });
-  apiGet({action:'getHourlyReport',from:toDMY(from),to:toDMY(to)},
-    function(d,e){ results.hourly=d||{}; check(); });
-  apiGet({action:'getDeviceReport',from:toDMY(from),to:toDMY(to)},
-    function(d,e){ results.device=d||{}; check(); });
-  apiGet({action:'getTopMerchants',from:toDMY(from),to:toDMY(to),limit:10},
-    function(d,e){ results.merchant=d||{}; check(); });
+  apiGet({action:'getWeeklyReport', from:toDMY(from), to:toDMY(to)},
+    function(d,e){ console.log('[GD] weekly:', d, e); results.weekly=d||{}; check(); });
+  apiGet({action:'getHourlyReport', from:toDMY(from), to:toDMY(to)},
+    function(d,e){ console.log('[GD] hourly:', d&&d.rows&&d.rows.length); results.hourly=d||{}; check(); });
+  apiGet({action:'getDeviceReport', from:toDMY(from), to:toDMY(to)},
+    function(d,e){ console.log('[GD] device:', d); results.device=d||{}; check(); });
+  apiGet({action:'getTopMerchants', from:toDMY(from), to:toDMY(to), limit:10},
+    function(d,e){ console.log('[GD] merchant:', d); results.merchant=d||{}; check(); });
 }
 
 function renderFullDashboard(results) {
