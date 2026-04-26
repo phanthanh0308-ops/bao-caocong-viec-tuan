@@ -538,7 +538,7 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
             <div class="section-block-title">🏆 Top 10 Merchant</div>
             <div class="tbl-scroll" style="max-height:260px;overflow-y:auto">
               <table class="rpt-tbl"><thead><tr>
-                <th>#</th><th style="text-align:left">TID</th><th style="text-align:left">Merchant</th><th>Số GD</th>
+                <th>#</th><th style="text-align:left">TID</th><th style="text-align:left">Merchant</th><th>Số GD</th><th>Doanh thu</th>
               </tr></thead><tbody id="topMerchantBody"></tbody></table>
             </div>
           </div>
@@ -854,7 +854,7 @@ function fetchWeeks() {
     }
     weeksList = data.weeks || [];
     buildWeekSel();
-    setSyncStatus('ok', 'Đã kết nối');
+    setSyncStatus('ok', 'Đã kết nối Sheets');
     showToast('Đã tải '+weeksList.length+' tuần từ Google Sheets','ok');
   });
 }
@@ -1479,12 +1479,13 @@ function onTxFileSelected(input) {
       if (hdrIdx < 0) { alert('Không tìm thấy header!'); return; }
 
       var headers = raw[hdrIdx];
-      var iSta  = headers.indexOf('Trạng thái thanh toán');
-      var iAmt  = headers.indexOf('Số tiền thanh toán');
-      var iCard = headers.indexOf('Loại thẻ');
-      var iDate = headers.indexOf('Ngày tạo đơn');
-      var iTID  = headers.indexOf('TID');
-      var iDev  = headers.indexOf('Device Serial No');
+      var iSta     = headers.indexOf('Trạng thái thanh toán');
+      var iAmt     = headers.indexOf('Số tiền thanh toán');
+      var iCard    = headers.indexOf('Loại thẻ');
+      var iDate    = headers.indexOf('Ngày tạo đơn');
+      var iTID     = headers.indexOf('TID');
+      var iDev     = headers.indexOf('Device Serial No');
+      var iOrderSta= headers.indexOf('Trạng thái đơn hàng'); // Void = Đã hoàn tiền
 
       var s = {
         total:0, success:0, void:0, amount:0,
@@ -1498,18 +1499,23 @@ function onTxFileSelected(input) {
 
       for (var r = hdrIdx+1; r < raw.length; r++) {
         var row = raw[r]; if (!row || !row[iSta]) continue;
-        var sta  = String(row[iSta]||'').trim().toUpperCase();
-        var amt  = parseFloat(String(row[iAmt]||'0').replace(/[^\d.]/g,''))||0;
-        var card = String(row[iCard]||'').trim().toUpperCase();
-        var dateStr = String(row[iDate]||'').substring(0,10);
-        var tid  = String(row[iTID]||'').trim();
-        var dev  = String(row[iDev]||'').trim().toUpperCase();
+        var sta       = String(row[iSta]||'').trim().toUpperCase();
+        var orderSta  = iOrderSta >= 0 ? String(row[iOrderSta]||'').trim().toUpperCase() : '';
+        var amt       = parseFloat(String(row[iAmt]||'0').replace(/[^\d.]/g,''))||0;
+        var card      = String(row[iCard]||'').trim().toUpperCase();
+        var dateStr   = String(row[iDate]||'').substring(0,10);
+        var tid       = String(row[iTID]||'').trim();
+        var dev       = String(row[iDev]||'').trim().toUpperCase();
         if (!s.date && dateStr) s.date = dateStr;
 
         s.total++;
-        var isVoid = VOID_STA.some(function(v){ return sta.indexOf(v)>=0; });
-        if (isVoid) { s.void++; }
-        else { s.success++; s.amount += amt; }
+        // Void = Trạng thái đơn hàng là "Đã hoàn tiền"
+        var isVoid = orderSta === 'ĐÃ HOÀN TIỀN' || orderSta === 'DA HOAN TIEN' || orderSta === 'REFUNDED';
+        if (isVoid) {
+          s.void++;
+        } else {
+          s.success++; s.amount += amt;
+        }
         if (s.byCard[card] !== undefined) s.byCard[card]++;
 
         // Giờ
@@ -1704,6 +1710,7 @@ function renderFullDashboard(results) {
       +'<td style="font-family:monospace;font-size:11px;color:var(--primary)">'+m.tid+'</td>'
       +'<td style="font-size:12px">'+m.merchant+'</td>'
       +'<td style="text-align:center;font-weight:700">'+m.count.toLocaleString('vi-VN')+'</td>'
+      +'<td style="text-align:right;font-weight:600;color:var(--primary)">'+formatVND(m.amount||0)+'</td>'
       +'</tr>';
   }).join('');
 
