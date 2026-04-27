@@ -1020,8 +1020,21 @@ function switchWeek(name) {
     var _ws = document.getElementById('weekSel'); if(_ws) _ws.value = curWeek || ''; return;
   }
   curWeek = name;
-  // Xoa cache ticket khi doi tuan
-  _ticketCache = {};
+  // Xoa toan bo cache khi doi tuan
+  _ticketCache    = {};
+  _ticketNotes    = {};
+  _pendingTickets = [];
+  var pb = document.getElementById('ticketPendingBlock');
+  if (pb) pb.style.display = 'none';
+  var tb = document.getElementById('ticketBlock');
+  if (tb) tb.style.display = 'none';
+  _ticketNotes = {};
+  _pendingTickets = [];
+  // Reset UI pending
+  var pb = document.getElementById('ticketPendingBlock');
+  if (pb) pb.style.display = 'none';
+  var tb = document.getElementById('ticketBlock');
+  if (tb) tb.style.display = 'none';
   // Neu dang o sec4, reload
   var activeSec = document.querySelector('.rpt-section.active');
   if (activeSec && activeSec.id === 'sec4') {
@@ -2435,6 +2448,8 @@ function _renderTicketFromRes(res) {
 
   // Load ghi chu roi render pending
   var pending = res.pendingTickets || [];
+  // Luu vao cache theo tuan
+  if (curWeek) _ticketCache[curWeek] = res;
   if (pending.length > 0) {
     loadTicketNotes(curWeek || '', function() {
       renderPendingTickets(pending);
