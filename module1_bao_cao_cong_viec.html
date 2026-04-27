@@ -2143,51 +2143,11 @@ function formatSecs(secs) {
   return parts.join(' ');
 }
 
-function renderTicketReport(groups, total, done, ton) {
-  // KPI cards
-  var kpiHtml = [
-    {label:'Tổng Ticket', val:total, color:'#5B47E0'},
-    {label:'Hoàn thành',  val:done,  color:'#10B981'},
-    {label:'Đang tồn',    val:ton,   color:'#EF4444'},
-  ].map(function(k) {
-    return '<div style="background:'+k.color+';color:#fff;border-radius:10px;padding:16px 24px;min-width:140px;text-align:center">'
-         + '<div style="font-size:28px;font-weight:800">'+k.val.toLocaleString()+'</div>'
-         + '<div style="font-size:12px;opacity:.85;margin-top:4px">'+k.label+'</div></div>';
-  }).join('');
-  document.getElementById('ticketKpiCards').innerHTML = kpiHtml;
-
-  // Bang chi tiet
-  var tbody = '';
-  var sortedKeys = Object.keys(groups).sort();
-  sortedKeys.forEach(function(qt) {
-    var g = groups[qt];
-    var avgSecs = g.countSecs > 0 ? Math.round(g.totalSecs / g.countSecs) : 0;
-    tbody += '<tr>'
-      + '<td><strong>' + qt + '</strong></td>'
-      + '<td style="text-align:center">' + g.total.toLocaleString() + '</td>'
-      + '<td style="text-align:center;color:#10B981"><strong>' + g.done.toLocaleString() + '</strong></td>'
-      + '<td style="text-align:center;color:' + (g.ton > 0 ? '#EF4444' : '#10B981') + '">' + g.ton.toLocaleString() + '</td>'
-      + '<td style="text-align:center;color:var(--text2);font-size:12px">' + formatSecs(avgSecs) + '</td>'
-      + '</tr>';
-  });
-  document.getElementById('ticketTableBody').innerHTML = tbody;
-
-  // Footer tong
-  var allSecs = 0, allCount = 0;
-  Object.values(groups).forEach(function(g){ allSecs += g.totalSecs; allCount += g.countSecs; });
-  var avgAll = allCount > 0 ? Math.round(allSecs / allCount) : 0;
-  document.getElementById('ticketTableFoot').innerHTML =
-    '<tr style="background:#f8f7ff;font-weight:700">'
-    + '<td>Tổng cộng</td>'
-    + '<td style="text-align:center">' + total.toLocaleString() + '</td>'
-    + '<td style="text-align:center;color:#10B981">' + done.toLocaleString() + '</td>'
-    + '<td style="text-align:center;color:' + (ton > 0 ? '#EF4444' : '#10B981') + '">' + ton.toLocaleString() + '</td>'
-    + '<td style="text-align:center;font-size:12px;color:var(--text2)">' + formatSecs(avgAll) + '</td>'
-    + '</tr>';
-
-  document.getElementById('ticketPlaceholder').style.display = 'none';
-  document.getElementById('ticketResult').style.display = 'block';
-  document.getElementById('ticketPushBtn').style.display = 'inline-flex';
+function renderTicketReport(resOrGroups, total, done, ton) {
+  var res = (resOrGroups && typeof resOrGroups === 'object' && 'groups' in resOrGroups)
+    ? resOrGroups
+    : { total: total, done: done, ton: ton, groups: resOrGroups, exportDate: '' };
+  _renderTicketFromRes(res);
 }
 
 function pushTicketToSheet() {
@@ -2389,25 +2349,35 @@ function _processAndRenderTicket(rows, exportDate) {
   var wk = curWeek || '';
   if (wk) _ticketCache[wk] = { rows: rows, exportDate: exportDate };
 
-  apiGet({
-    action: 'getTicketReport',
-    weekName: wk,
-    rows: JSON.stringify(rows),
-    exportDate: exportDate
-  }, function(res) {
+  // Dung POST vi rows JSON qua lon cho GET
+  fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'getTicketReport',
+      weekName: wk,
+      rows: JSON.stringify(rows),
+      exportDate: exportDate
+    })
+  }).then(function(r){ return r.text(); }).then(function(t){
+    var res;
+    try {
+      var clean = t.replace(/^[^{[]*/, '').replace(/[^}\]]*$/, '');
+      res = JSON.parse(clean);
+    } catch(e) { res = { error: 'Parse error: ' + t.slice(0,200) }; }
     if (!res || res.error) {
       document.getElementById('ticketTableBody').innerHTML =
         '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">' + (res && res.error || 'Lỗi xử lý') + '</td></tr>';
       return;
     }
     renderTicketReport(res);
-  }, function(){
+  }).catch(function(e){
     document.getElementById('ticketTableBody').innerHTML =
-      '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">Lỗi kết nối GAS</td></tr>';
+      '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">Lỗi kết nối: ' + e.message + '</td></tr>';
   });
 }
 
-function renderTicketReport(res) {
+function _renderTicketFromRes(res) {
   // KPI
   var kpiHtml = [
     {label:'Tổng Ticket', val:res.total,  color:'#5B47E0'},
