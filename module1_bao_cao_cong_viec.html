@@ -759,6 +759,10 @@ function showRptSection(id) {
   document.querySelectorAll('.rpt-nav').forEach(function(n){ n.classList.remove('active'); });
   var nav = document.querySelector('.rpt-nav[data-rpt="'+id+'"]');
   if (nav) nav.classList.add('active');
+  // Auto load Drive files khi vao Vận hành
+  if (id === 'sec4' && typeof curWeek !== 'undefined' && curWeek) {
+    loadSec4WeekFiles();
+  }
 
   // Show/hide savebar — chỉ hiện ở mục Công việc
   var savebar = document.getElementById('savebar') || document.querySelector('.savebar');
@@ -2379,12 +2383,7 @@ function fmtSecs(secs) {
   return p.join(' ');
 }
 
-// Hook vào showRptSection để auto load khi chọn sec4
-var _origShowRptSection = typeof showRptSection === 'function' ? showRptSection : null;
-function showRptSection(id) {
-  if (_origShowRptSection) _origShowRptSection(id);
-  if (id === 'sec4' && curWeek) loadSec4WeekFiles();
-}
+// sec4 auto-load handled inline
 
 </script>
 </body>
