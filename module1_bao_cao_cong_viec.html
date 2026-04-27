@@ -2244,11 +2244,9 @@ function renderWeekFiles(files) {
 function uploadReportFile(input, fileType) {
   var file = input.files[0];
   if (!file || !curWeek) { alert('Vui lòng chọn tuần trước khi upload'); return; }
-  // Kiem tra dang nhap Google
   if (!authUser || !authUser.email) {
     alert('Vui lòng đăng nhập bằng Google trước khi upload file!');
-    input.value = '';
-    return;
+    input.value = ''; return;
   }
   var status = document.getElementById('uploadStatus');
   status.style.display = 'block';
@@ -2258,28 +2256,23 @@ function uploadReportFile(input, fileType) {
   reader.onload = function(e) {
     var base64 = e.target.result.split(',')[1];
 
-    // 1. Parse bang SheetJS truoc khi upload
+    // BƯỚC 1: Parse ngay trên browser bằng SheetJS
     var parsedRows = null;
     var exportDate = '';
     if (fileType === 'ticket') {
       try {
         var bytes = new Uint8Array(atob(base64).split('').map(function(c){return c.charCodeAt(0);}));
         var wb    = XLSX.read(bytes, {type:'array', cellDates:true});
-        // Tim sheet Data hoac lay sheet dau tien
         var wsName = wb.SheetNames.indexOf('Data') >= 0 ? 'Data' : wb.SheetNames[0];
         var ws     = wb.Sheets[wsName];
-        // Override dimension de doc het rows (file tu he thong co the bi sai dimension)
+        // Override dimension
         var allCells = Object.keys(ws).filter(function(k){ return k[0] !== '!'; });
         if (allCells.length > 0) {
-          var maxRow = 0;
+          var maxRow = 0, maxCol = 0;
           allCells.forEach(function(k){
-            var r = XLSX.utils.decode_cell(k).r;
-            if (r > maxRow) maxRow = r;
-          });
-          var maxCol = 0;
-          allCells.forEach(function(k){
-            var c = XLSX.utils.decode_cell(k).c;
-            if (c > maxCol) maxCol = c;
+            var rc = XLSX.utils.decode_cell(k);
+            if (rc.r > maxRow) maxRow = rc.r;
+            if (rc.c > maxCol) maxCol = rc.c;
           });
           ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:maxRow,c:maxCol}});
         }
@@ -2289,8 +2282,14 @@ function uploadReportFile(input, fileType) {
       } catch(ex) { console.warn('Parse error:', ex); }
     }
 
-    // 2. Upload len Drive
-    status.innerHTML = '<span style="color:var(--primary)">⏳ Đang upload ' + file.name + '...</span>';
+    // BƯỚC 2: Xử lý data ngay (không cần chờ upload Drive)
+    if (fileType === 'ticket' && parsedRows && parsedRows.length > 5) {
+      status.innerHTML = '<span style="color:#10B981">✅ Đọc file thành công (' + (parsedRows.length-4) + ' dòng)</span>';
+      _processAndRenderTicket(parsedRows, exportDate);
+    }
+
+    // BƯỚC 3: Upload lên Drive (nền - không block UI)
+    status.innerHTML += ' &nbsp;⏳ Đang lưu lên Drive...';
     fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -2301,21 +2300,24 @@ function uploadReportFile(input, fileType) {
         mimeType: file.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       })
     }).then(function(r){ return r.text(); }).then(function(t){
-      var res;
-      try { res = JSON.parse(t.replace(/^[^(]+\(/, '').replace(/\)$/, '')); }
-      catch(ex) { res = { error: t }; }
-      if (res && res.success) {
-        status.innerHTML = '<span style="color:#10B981">✅ Upload thành công: ' + res.fileName + '</span>';
-        loadSec4WeekFiles();
-        // 3. Neu la ticket va da parse duoc thi xu ly luon
-        if (fileType === 'ticket' && parsedRows) {
-          _processAndRenderTicket(parsedRows, exportDate);
+      try {
+        var clean = t.replace(/^[^{[]*/, '').replace(/[^}\]]*$/, '');
+        var res = JSON.parse(clean);
+        if (res && res.success) {
+          status.innerHTML = '<span style="color:#10B981">✅ ' + file.name + ' đã lưu lên Drive!</span>';
+          setTimeout(function(){ status.style.display='none'; }, 3000);
+        } else {
+          // Drive loi nhung data da xu ly roi, chi warn nhe
+          status.innerHTML = '<span style="color:#F59E0B">⚠️ Đã xử lý xong. Lưu Drive thất bại (không ảnh hưởng báo cáo)</span>';
+          setTimeout(function(){ status.style.display='none'; }, 4000);
         }
-      } else {
-        status.innerHTML = '<span style="color:#EF4444">❌ Lỗi upload: ' + (res && res.error || 'Unknown') + '</span>';
+      } catch(ex) {
+        status.innerHTML = '<span style="color:#F59E0B">⚠️ Đã xử lý xong. Lưu Drive thất bại</span>';
+        setTimeout(function(){ status.style.display='none'; }, 4000);
       }
     }).catch(function() {
-      status.innerHTML = '<span style="color:#EF4444">❌ Không kết nối được</span>';
+      status.innerHTML = '<span style="color:#F59E0B">⚠️ Đã xử lý xong. Không kết nối được Drive</span>';
+      setTimeout(function(){ status.style.display='none'; }, 4000);
     });
   };
   reader.readAsDataURL(file);
