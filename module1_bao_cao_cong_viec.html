@@ -2357,6 +2357,10 @@ function _processAndRenderTicket(rows, exportDate) {
 }
 
 function _renderTicketFromRes(res) {
+  // An placeholder
+  var ph = document.getElementById('ticketPlaceholderSec4');
+  if (ph) ph.style.display = 'none';
+  document.getElementById('ticketBlock').style.display = 'block';
   // KPI
   var kpiHtml = [
     {label:'Tổng Ticket', val:res.total,  color:'#5B47E0'},
