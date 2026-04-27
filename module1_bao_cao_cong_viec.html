@@ -288,6 +288,7 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -315,7 +316,7 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
     <div class="nav-item rpt-nav" data-rpt="sec4" onclick="showRptSection('sec4')">
       <span class="nav-ico">⚙️</span><span>Vận hành</span>
     </div>
-    <div class="nav-sep"></div>
+<div class="nav-sep"></div>
     <div class="sidebar-section">Danh sách tuần</div>
     <div class="week-list" id="weekList">
       <div style="padding:8px 12px;font-size:11px;color:rgba(255,255,255,0.3)">Đang tải...</div>
@@ -621,13 +622,63 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
     <!-- ══ MỤC 4: VẬN HÀNH ══ -->
     <div id="sec4" class="rpt-section">
       <div class="rpt-section-title">⚙️ Báo cáo vận hành</div>
-      <div id="sec4Content">
-        <div class="rpt-placeholder">
-          <span class="rpt-placeholder-ico">⚙️</span>
-          <div class="rpt-placeholder-title">Chưa có dữ liệu vận hành</div>
-          <div class="rpt-placeholder-sub">Chọn tuần bên trái để tải dữ liệu vận hành.</div>
+
+      <!-- FILES TRONG FOLDER TUAN -->
+      <div class="section-block" style="margin-bottom:16px">
+        <div class="section-block-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span>📁 File báo cáo tuần này</span>
+          <span id="sec4WeekLabel" style="font-size:12px;color:var(--text2);font-weight:400"></span>
+        </div>
+        <div style="padding:16px 20px">
+          <!-- Upload buttons -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+            <label for="uploadTicket" style="cursor:pointer;background:var(--primary);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600">
+              🎫 Upload Ticket
+            </label>
+            <input type="file" id="uploadTicket" accept=".xlsx,.xls" style="display:none" onchange="uploadReportFile(this,'ticket')">
+
+            <label for="uploadEDC" style="cursor:pointer;background:#F59E0B;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600">
+              ⚠️ Upload Lỗi EDC
+            </label>
+            <input type="file" id="uploadEDC" accept=".xlsx,.xls" style="display:none" onchange="uploadReportFile(this,'edc')">
+
+            <label for="uploadVanHanh" style="cursor:pointer;background:#10B981;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600">
+              ⚙️ Upload Vận hành
+            </label>
+            <input type="file" id="uploadVanHanh" accept=".xlsx,.xls" style="display:none" onchange="uploadReportFile(this,'vanhanh')">
+          </div>
+
+          <!-- Danh sach file da co -->
+          <div id="weekFilesList">
+            <div style="color:var(--text2);font-size:13px">Chọn tuần để xem file đã upload...</div>
+          </div>
+
+          <div id="uploadStatus" style="margin-top:10px;font-size:13px;display:none"></div>
         </div>
       </div>
+
+      <!-- TICKET REPORT -->
+      <div class="section-block" id="ticketBlock" style="margin-bottom:16px;display:none">
+        <div class="section-block-title">🎫 Báo cáo Ticket</div>
+        <div id="ticketKpiCards" style="display:flex;gap:12px;flex-wrap:wrap;padding:16px 20px"></div>
+        <div class="tbl-scroll" style="padding:0">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:240px">Quy trình Ticket</th>
+                <th style="text-align:center">Số lượng</th>
+                <th style="text-align:center">Hoàn thành</th>
+                <th style="text-align:center">Tồn</th>
+                <th style="text-align:center">Thời gian TB</th>
+              </tr>
+            </thead>
+            <tbody id="ticketTableBody"></tbody>
+            <tfoot id="ticketTableFoot"></tfoot>
+          </table>
+        </div>
+        <div style="padding:8px 20px 12px;font-size:11px;color:var(--text2)" id="ticketExportDate"></div>
+      </div>
+
     </div>
 
   </div><!-- /content -->
@@ -1986,6 +2037,353 @@ function autoCheckWeek() {
       }, 500);
     }
   });
+}
+
+
+
+// ============================================================
+//  TICKET REPORT
+// ============================================================
+var ticketData = null; // Luu summary de push len sheet
+
+function loadTicketFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  document.getElementById('ticketFileName').textContent = file.name;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, {type: 'array', cellDates: true});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: null});
+      parseTicketData(rows);
+    } catch(err) {
+      alert('Loi doc file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseTicketData(rows) {
+  // Row 0: "Danh sach Ticket"
+  // Row 1: "Ngay xuat: ..."
+  // Row 3: header
+  // Row 4+: data
+  var exportDate = '';
+  if (rows[1] && rows[1][0]) {
+    exportDate = String(rows[1][0]);
+  }
+  document.getElementById('ticketExportDate').textContent = exportDate;
+
+  var DONE_STA = {'Đã đóng':1,'Hoàn thành':1,'Closed':1,'Done':1};
+  var groups = {}; // quyTrinh -> {total, done, ton, totalSecs, countSecs}
+
+  for (var i = 4; i < rows.length; i++) {
+    var r = rows[i];
+    if (!r || r[0] == null) continue;
+
+    var quyTrinh = (r[27] || '').toString().trim() || 'Khác';
+    var trangThai = (r[2]  || '').toString().trim();
+    var tgxl      = (r[16] || '').toString().trim();
+    var ngayDong  = r[31];
+
+    if (!groups[quyTrinh]) {
+      groups[quyTrinh] = {total:0, done:0, ton:0, totalSecs:0, countSecs:0};
+    }
+    var g = groups[quyTrinh];
+    g.total++;
+
+    var isDone = DONE_STA[trangThai] || (ngayDong != null && ngayDong !== '');
+    if (isDone) g.done++; else g.ton++;
+
+    // Parse thoi gian xu ly
+    var secs = parseTimeStr(tgxl);
+    if (secs > 0) { g.totalSecs += secs; g.countSecs++; }
+  }
+
+  // Tinh tong
+  var total = 0, done = 0, ton = 0;
+  Object.values(groups).forEach(function(g) {
+    total += g.total; done += g.done; ton += g.ton;
+  });
+
+  // Luu de push Sheet
+  ticketData = {groups: groups, total: total, done: done, ton: ton, exportDate: exportDate};
+
+  renderTicketReport(groups, total, done, ton);
+}
+
+function parseTimeStr(str) {
+  if (!str || str === 'null') return 0;
+  var secs = 0;
+  var m;
+  m = str.match(/(\d+)\s*ngày/);  if (m) secs += parseInt(m[1]) * 86400;
+  m = str.match(/(\d+)\s*giờ/);   if (m) secs += parseInt(m[1]) * 3600;
+  m = str.match(/(\d+)\s*phút/);  if (m) secs += parseInt(m[1]) * 60;
+  m = str.match(/(\d+)\s*giây/);  if (m) secs += parseInt(m[1]);
+  return secs;
+}
+
+function formatSecs(secs) {
+  if (!secs || secs <= 0) return '—';
+  var d = Math.floor(secs / 86400);
+  var h = Math.floor((secs % 86400) / 3600);
+  var m = Math.floor((secs % 3600) / 60);
+  var s = Math.floor(secs % 60);
+  var parts = [];
+  if (d > 0) parts.push(d + ' ngày');
+  if (h > 0) parts.push(h + ' giờ');
+  if (m > 0) parts.push(m + ' phút');
+  if (s > 0 || parts.length === 0) parts.push(s + ' giây');
+  return parts.join(' ');
+}
+
+function renderTicketReport(groups, total, done, ton) {
+  // KPI cards
+  var kpiHtml = [
+    {label:'Tổng Ticket', val:total, color:'#5B47E0'},
+    {label:'Hoàn thành',  val:done,  color:'#10B981'},
+    {label:'Đang tồn',    val:ton,   color:'#EF4444'},
+  ].map(function(k) {
+    return '<div style="background:'+k.color+';color:#fff;border-radius:10px;padding:16px 24px;min-width:140px;text-align:center">'
+         + '<div style="font-size:28px;font-weight:800">'+k.val.toLocaleString()+'</div>'
+         + '<div style="font-size:12px;opacity:.85;margin-top:4px">'+k.label+'</div></div>';
+  }).join('');
+  document.getElementById('ticketKpiCards').innerHTML = kpiHtml;
+
+  // Bang chi tiet
+  var tbody = '';
+  var sortedKeys = Object.keys(groups).sort();
+  sortedKeys.forEach(function(qt) {
+    var g = groups[qt];
+    var avgSecs = g.countSecs > 0 ? Math.round(g.totalSecs / g.countSecs) : 0;
+    tbody += '<tr>'
+      + '<td><strong>' + qt + '</strong></td>'
+      + '<td style="text-align:center">' + g.total.toLocaleString() + '</td>'
+      + '<td style="text-align:center;color:#10B981"><strong>' + g.done.toLocaleString() + '</strong></td>'
+      + '<td style="text-align:center;color:' + (g.ton > 0 ? '#EF4444' : '#10B981') + '">' + g.ton.toLocaleString() + '</td>'
+      + '<td style="text-align:center;color:var(--text2);font-size:12px">' + formatSecs(avgSecs) + '</td>'
+      + '</tr>';
+  });
+  document.getElementById('ticketTableBody').innerHTML = tbody;
+
+  // Footer tong
+  var allSecs = 0, allCount = 0;
+  Object.values(groups).forEach(function(g){ allSecs += g.totalSecs; allCount += g.countSecs; });
+  var avgAll = allCount > 0 ? Math.round(allSecs / allCount) : 0;
+  document.getElementById('ticketTableFoot').innerHTML =
+    '<tr style="background:#f8f7ff;font-weight:700">'
+    + '<td>Tổng cộng</td>'
+    + '<td style="text-align:center">' + total.toLocaleString() + '</td>'
+    + '<td style="text-align:center;color:#10B981">' + done.toLocaleString() + '</td>'
+    + '<td style="text-align:center;color:' + (ton > 0 ? '#EF4444' : '#10B981') + '">' + ton.toLocaleString() + '</td>'
+    + '<td style="text-align:center;font-size:12px;color:var(--text2)">' + formatSecs(avgAll) + '</td>'
+    + '</tr>';
+
+  document.getElementById('ticketPlaceholder').style.display = 'none';
+  document.getElementById('ticketResult').style.display = 'block';
+  document.getElementById('ticketPushBtn').style.display = 'inline-flex';
+}
+
+function pushTicketToSheet() {
+  if (!ticketData) return;
+  var btn = document.getElementById('ticketPushBtn');
+  btn.textContent = '⏳ Đang lưu...';
+  btn.disabled = true;
+
+  var summary = {
+    exportDate: ticketData.exportDate,
+    total: ticketData.total,
+    done: ticketData.done,
+    ton: ticketData.ton,
+    groups: {}
+  };
+  Object.keys(ticketData.groups).forEach(function(qt) {
+    var g = ticketData.groups[qt];
+    summary.groups[qt] = {
+      total: g.total, done: g.done, ton: g.ton,
+      avgSecs: g.countSecs > 0 ? Math.round(g.totalSecs / g.countSecs) : 0
+    };
+  });
+
+  apiGet({
+    action: 'saveTicketSummary',
+    summary: JSON.stringify(summary),
+    callback: 'cb'
+  }, function(res) {
+    btn.disabled = false;
+    if (res && res.success) {
+      btn.textContent = '✅ Đã lưu!';
+      setTimeout(function(){ btn.textContent = '☁️ Lưu lên Sheet'; }, 3000);
+    } else {
+      btn.textContent = '❌ Lỗi!';
+      setTimeout(function(){ btn.textContent = '☁️ Lưu lên Sheet'; }, 3000);
+    }
+  }, function() {
+    btn.disabled = false;
+    btn.textContent = '❌ Lỗi kết nối!';
+    setTimeout(function(){ btn.textContent = '☁️ Lưu lên Sheet'; }, 3000);
+  });
+}
+
+
+
+// ============================================================
+//  DRIVE REPORT — Upload & Load file theo tuần
+// ============================================================
+function loadSec4WeekFiles() {
+  var week = curWeek;
+  if (!week) return;
+  document.getElementById('sec4WeekLabel').textContent = week;
+  document.getElementById('weekFilesList').innerHTML =
+    '<div style="color:var(--text2);font-size:13px">⏳ Đang tải danh sách file...</div>';
+
+  apiGet({ action:'listWeekFiles', weekName: week }, function(res) {
+    if (!res || res.error) {
+      document.getElementById('weekFilesList').innerHTML =
+        '<div style="color:#EF4444;font-size:13px">Lỗi: ' + (res && res.error || 'Không kết nối được') + '</div>';
+      return;
+    }
+    renderWeekFiles(res.files || []);
+    // Auto load ticket nếu có
+    var ticketFile = (res.files || []).find(function(f){ return f.type === 'ticket'; });
+    if (ticketFile) loadTicketReport(week);
+  }, function() {
+    document.getElementById('weekFilesList').innerHTML =
+      '<div style="color:#EF4444;font-size:13px">Không kết nối được GAS</div>';
+  });
+}
+
+function renderWeekFiles(files) {
+  if (!files.length) {
+    document.getElementById('weekFilesList').innerHTML =
+      '<div style="color:var(--text2);font-size:13px">Chưa có file nào — upload file bên trên để bắt đầu</div>';
+    return;
+  }
+  var icons = { ticket:'🎫', edc:'⚠️', vanhanh:'⚙️', other:'📄' };
+  var html = '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+  files.forEach(function(f) {
+    html += '<div style="background:#f0f2ff;border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px;display:flex;align-items:center;gap:6px">'
+          + '<span>' + (icons[f.type]||'📄') + '</span>'
+          + '<span style="font-weight:600">' + f.name + '</span>'
+          + '<span style="color:var(--text2)">• ' + f.updated + '</span>'
+          + '</div>';
+  });
+  html += '</div>';
+  document.getElementById('weekFilesList').innerHTML = html;
+}
+
+function uploadReportFile(input, fileType) {
+  var file = input.files[0];
+  if (!file || !curWeek) {
+    alert('Vui lòng chọn tuần trước khi upload'); return;
+  }
+  var status = document.getElementById('uploadStatus');
+  status.style.display = 'block';
+  status.innerHTML = '<span style="color:var(--primary)">⏳ Đang upload ' + file.name + '...</span>';
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result.split(',')[1];
+    apiGet({
+      action:   'uploadReportFile',
+      weekName: curWeek,
+      fileType: fileType,
+      fileName: file.name,
+      fileData: base64,
+      mimeType: file.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }, function(res) {
+      if (res && res.success) {
+        status.innerHTML = '<span style="color:#10B981">✅ Upload thành công: ' + res.fileName + '</span>';
+        loadSec4WeekFiles(); // Refresh danh sach
+        if (fileType === 'ticket') loadTicketReport(curWeek);
+      } else {
+        status.innerHTML = '<span style="color:#EF4444">❌ Lỗi: ' + (res && res.error || 'Unknown') + '</span>';
+      }
+    }, function() {
+      status.innerHTML = '<span style="color:#EF4444">❌ Không kết nối được</span>';
+    });
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function loadTicketReport(weekName) {
+  document.getElementById('ticketBlock').style.display = 'block';
+  document.getElementById('ticketTableBody').innerHTML =
+    '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">⏳ Đang xử lý file ticket...</td></tr>';
+
+  apiGet({ action:'getTicketReport', weekName: weekName }, function(res) {
+    if (!res || res.error) {
+      document.getElementById('ticketTableBody').innerHTML =
+        '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">' + (res && res.error || 'Lỗi') + '</td></tr>';
+      return;
+    }
+    renderTicketReport(res);
+  }, function() {
+    document.getElementById('ticketTableBody').innerHTML =
+      '<tr><td colspan="5" style="text-align:center;color:#EF4444;padding:16px">Không kết nối được GAS</td></tr>';
+  });
+}
+
+function renderTicketReport(res) {
+  // KPI
+  var kpiHtml = [
+    {label:'Tổng Ticket', val:res.total,  color:'#5B47E0'},
+    {label:'Hoàn thành',  val:res.done,   color:'#10B981'},
+    {label:'Đang tồn',    val:res.ton,    color:'#EF4444'},
+  ].map(function(k) {
+    return '<div style="background:'+k.color+';color:#fff;border-radius:10px;padding:14px 22px;min-width:130px;text-align:center">'
+         + '<div style="font-size:26px;font-weight:800">' + k.val + '</div>'
+         + '<div style="font-size:11px;opacity:.85;margin-top:3px">' + k.label + '</div></div>';
+  }).join('');
+  document.getElementById('ticketKpiCards').innerHTML = kpiHtml;
+
+  // Table
+  var tbody = '';
+  Object.keys(res.groups).sort().forEach(function(qt) {
+    var g = res.groups[qt];
+    tbody += '<tr>'
+      + '<td><strong>' + qt + '</strong></td>'
+      + '<td style="text-align:center">' + g.total + '</td>'
+      + '<td style="text-align:center;color:#10B981"><strong>' + g.done + '</strong></td>'
+      + '<td style="text-align:center;color:' + (g.ton>0?'#EF4444':'#10B981') + '">' + g.ton + '</td>'
+      + '<td style="text-align:center;font-size:12px;color:var(--text2)">' + fmtSecs(g.avgSecs) + '</td>'
+      + '</tr>';
+  });
+  document.getElementById('ticketTableBody').innerHTML = tbody;
+
+  // Footer
+  var allSecs = 0, allCnt = 0;
+  Object.values(res.groups).forEach(function(g){ if(g.avgSecs){ allSecs += g.avgSecs; allCnt++; } });
+  document.getElementById('ticketTableFoot').innerHTML =
+    '<tr style="background:#f8f7ff;font-weight:700">'
+    + '<td>Tổng cộng</td>'
+    + '<td style="text-align:center">' + res.total + '</td>'
+    + '<td style="text-align:center;color:#10B981">' + res.done + '</td>'
+    + '<td style="text-align:center;color:' + (res.ton>0?'#EF4444':'#10B981') + '">' + res.ton + '</td>'
+    + '<td style="text-align:center;font-size:12px;color:var(--text2)">' + (allCnt?fmtSecs(Math.round(allSecs/allCnt)):'—') + '</td>'
+    + '</tr>';
+
+  document.getElementById('ticketExportDate').textContent = res.exportDate || '';
+}
+
+function fmtSecs(secs) {
+  if (!secs) return '—';
+  var d=Math.floor(secs/86400), h=Math.floor((secs%86400)/3600),
+      m=Math.floor((secs%3600)/60), s=Math.floor(secs%60);
+  var p = [];
+  if(d) p.push(d+' ngày'); if(h) p.push(h+' giờ');
+  if(m) p.push(m+' phút'); if(s||!p.length) p.push(s+' giây');
+  return p.join(' ');
+}
+
+// Hook vào showRptSection để auto load khi chọn sec4
+var _origShowRptSection = typeof showRptSection === 'function' ? showRptSection : null;
+function showRptSection(id) {
+  if (_origShowRptSection) _origShowRptSection(id);
+  if (id === 'sec4' && curWeek) loadSec4WeekFiles();
 }
 
 </script>
