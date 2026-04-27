@@ -629,6 +629,9 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
             🎫 Upload Ticket
           </label>
           <input type="file" id="uploadTicket" accept=".xlsx,.xls" style="display:none" onchange="uploadReportFile(this,'ticket')">
+          <button onclick="readTicketFromDrive()" style="background:#6366F1;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+            📂 Đọc từ Drive
+          </button>
 
           <span id="uploadStatus" style="font-size:12px;display:none"></span>
         </div>
@@ -2462,34 +2465,36 @@ function renderPendingTickets(tickets) {
   _pendingTickets = tickets || [];
   var block = document.getElementById('ticketPendingBlock');
   var tbody = document.getElementById('ticketPendingBody');
-  if (!tickets || !tickets.length) {
-    block.style.display = 'none'; return;
-  }
+  if (!tickets || !tickets.length) { block.style.display = 'none'; return; }
   block.style.display = 'block';
   document.getElementById('saveNotesBtn').style.display = 'inline-block';
 
-  var html = '';
+  var rows = [];
   tickets.forEach(function(t) {
     var note  = (_ticketNotes[t.ma] || {}).ghiChu || '';
     var done  = (_ticketNotes[t.ma] || {}).daXuLy || false;
-    html += '<tr id="prow-' + t.ma + '">'
+    var border = done ? '#10B981' : 'var(--border)';
+    var bg     = done ? '#10B981' : 'transparent';
+    var check  = done ? '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7L5.5 10L11.5 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '';
+    var safeNote = note.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    var safeMa   = t.ma.replace(/'/g, '&#39;');
+    rows.push(
+      '<tr id="prow-' + safeMa + '">'
       + '<td style="font-weight:600;color:var(--primary);font-size:12px">' + t.ma + '</td>'
       + '<td style="font-size:12px">' + (t.trangThai||'') + '</td>'
       + '<td style="font-size:12px">' + (t.tieude||'') + '</td>'
       + '<td style="font-size:12px;color:var(--text2)">' + (t.noidung||'') + '</td>'
       + '<td style="font-size:12px;color:var(--text2)">' + (t.binhluan||'') + '</td>'
       + '<td style="font-size:12px">' + (t.quyTrinh||'') + '</td>'
-      + '<td><input type="text" value="' + note.replace(/"/g,'&quot;') + '" '
-      + '  onchange="_noteChanged('' + t.ma + '',this.value)" '
-      + '  style="width:100%;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;background:var(--bg);color:var(--text);font-family:inherit">'
-      + '</td>'
+      + '<td><input type="text" value="' + safeNote + '" data-ma="' + safeMa + '" onchange="_noteChanged(this.dataset.ma,this.value)" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;background:var(--bg);color:var(--text);font-family:inherit"></td>'
       + '<td style="text-align:center">'
-      + '<div onclick="_toggleDone('' + t.ma + '')" style="cursor:pointer;width:28px;height:28px;border-radius:6px;border:2px solid ' + (done?'#10B981':'var(--border)') + ';background:' + (done?'#10B981':'transparent') + ';display:flex;align-items:center;justify-content:center;margin:0 auto;transition:all .15s" id="chk-' + t.ma + '">'
-      + (done ? '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7L5.5 10L11.5 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '')
+      + '<div data-ma="' + safeMa + '" onclick="_toggleDone(this.dataset.ma)" id="chk-' + safeMa + '" style="cursor:pointer;width:28px;height:28px;border-radius:6px;border:2px solid ' + border + ';background:' + bg + ';display:flex;align-items:center;justify-content:center;margin:0 auto;transition:all .15s">'
+      + check
       + '</div></td>'
-      + '</tr>';
+      + '</tr>'
+    );
   });
-  tbody.innerHTML = html;
+  tbody.innerHTML = rows.join('');
 }
 
 function _noteChanged(ma, val) {
@@ -2535,6 +2540,29 @@ function loadTicketNotes(weekName, callback) {
     _ticketNotes = (res && res.notes) ? res.notes : {};
     if (callback) callback();
   }, function(){ if (callback) callback(); });
+}
+
+
+function readTicketFromDrive() {
+  if (!curWeek) { alert('Vui lòng chọn tuần trước!'); return; }
+  if (!authUser || !authUser.email) {
+    alert('Vui lòng đăng nhập bằng Google trước!'); return;
+  }
+  var status = document.getElementById('uploadStatus');
+  status.style.display = 'block';
+  status.innerHTML = '<span style="color:var(--primary)">⏳ Đang đọc file ticket từ Drive...</span>';
+
+  apiGet({ action: 'processTicketFromDrive', weekName: curWeek }, function(res) {
+    if (!res || res.error) {
+      status.innerHTML = '<span style="color:#EF4444">❌ ' + (res && res.error || 'Lỗi') + '</span>';
+      return;
+    }
+    status.innerHTML = '<span style="color:#10B981">✅ Đã đọc file từ Drive thành công!</span>';
+    setTimeout(function(){ status.style.display = 'none'; }, 3000);
+    renderTicketReport(res);
+  }, function() {
+    status.innerHTML = '<span style="color:#EF4444">❌ Không kết nối được GAS</span>';
+  });
 }
 
 </script>
