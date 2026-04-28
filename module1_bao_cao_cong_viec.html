@@ -254,6 +254,15 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
 .error-group-title{padding:11px 18px;font-size:13px;font-weight:700;background:linear-gradient(90deg,var(--primary-light),var(--white));border-bottom:1px solid var(--border);color:var(--primary)}
 /* SECTION BLOCKS (mục 4) */
 .section-block{background:var(--white);border-radius:var(--radius);box-shadow:var(--card-shadow);overflow:hidden;margin-bottom:16px}
+.vanhanh-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:0}
+.vanhanh-tab{padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0;border:none;background:transparent;color:var(--text2);transition:all .15s;margin-bottom:-2px;border-bottom:2px solid transparent}
+.vanhanh-tab:hover{color:var(--primary);background:var(--primary-light)}
+.vanhanh-tab.active{color:var(--primary);border-bottom:2px solid var(--primary);background:var(--primary-light)}
+.vanhanh-panel{display:none}.vanhanh-panel.active{display:block}
+.coming-soon{padding:48px;text-align:center;color:var(--text2)}
+.coming-soon-ico{font-size:40px;margin-bottom:12px}
+.coming-soon-title{font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.coming-soon-sub{font-size:13px}
 .section-block-title{padding:13px 20px;font-size:13px;font-weight:700;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;color:var(--text)}
 .section-sub-title{padding:10px 20px;font-size:12px;font-weight:600;color:var(--text2);background:var(--bg)}
 .section-block .tbl-scroll{padding:0}
@@ -623,22 +632,28 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
 
     <!-- ══ MỤC 4: VẬN HÀNH ══ -->
     <div id="sec4" class="rpt-section">
-      <!-- Header voi nut upload -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-        <div class="rpt-section-title" style="margin:0">⚙️ Báo cáo vận hành</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <label for="uploadTicket" style="cursor:pointer;background:var(--primary);color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
+      <div class="rpt-section-title">⚙️ Báo cáo vận hành</div>
+
+      <!-- TAB NAVIGATION -->
+      <div class="vanhanh-tabs">
+        <button class="vanhanh-tab active" onclick="switchVanHanhTab('ticket',this)">🎫 Báo cáo Ticket</button>
+        <button class="vanhanh-tab" onclick="switchVanHanhTab('email',this)">📧 Báo cáo Email</button>
+        <button class="vanhanh-tab" onclick="switchVanHanhTab('thuhoi',this)">🔄 Báo cáo thu hồi</button>
+        <button class="vanhanh-tab" onclick="switchVanHanhTab('tonkho',this)">📦 Báo cáo tồn kho giao máy</button>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <label for="uploadTicket" id="uploadTicketLabel" style="cursor:pointer;background:var(--primary);color:#fff;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
             🎫 Upload Ticket
           </label>
           <input type="file" id="uploadTicket" accept=".xlsx,.xls" style="display:none" onchange="uploadReportFile(this,'ticket')">
-          <button onclick="readTicketFromDrive()" style="background:#6366F1;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+          <button id="readDriveBtn" onclick="readTicketFromDrive()" style="background:#6366F1;color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">
             📂 Đọc từ Drive
           </button>
-
           <span id="uploadStatus" style="font-size:12px;display:none"></span>
         </div>
       </div>
 
+      <!-- PANEL: TICKET -->
+      <div class="vanhanh-panel active" id="panel-ticket">
       <!-- TICKET REPORT -->
       <div class="section-block" id="ticketBlock" style="margin-bottom:16px;display:none">
         <div class="section-block-title">🎫 Báo cáo Ticket</div>
@@ -691,6 +706,158 @@ select.sta-sel{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:600
       <!-- Placeholder khi chua co data -->
       <div id="ticketPlaceholderSec4" style="display:none;padding:32px;text-align:center;color:var(--text2);font-size:13px">
         Chưa có báo cáo ticket cho tuần này — bấm <b>🎫 Upload Ticket</b> để bắt đầu
+      </div>
+      </div><!-- /panel-ticket -->
+
+      <!-- PANEL: EMAIL -->
+      <div class="vanhanh-panel" id="panel-email">
+        <div class="section-block">
+          <div class="section-block-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>📧 Báo cáo Email tuần này</span>
+            <div style="display:flex;gap:8px">
+              <button onclick="addEmailRow()" style="background:var(--primary);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">+ Thêm dòng</button>
+              <button onclick="saveEmailReport()" id="saveEmailBtn" style="background:#10B981;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">💾 Lưu lên Sheet</button>
+            </div>
+          </div>
+          <div class="tbl-scroll" style="padding:0">
+            <table class="tbl" id="emailTable">
+              <thead>
+                <tr>
+                  <th style="text-align:left">Loại Mail</th>
+                  <th style="width:120px;text-align:center">Đã xử lý</th>
+                  <th style="width:120px;text-align:center">Chưa xử lý</th>
+                  <th style="width:36px"></th>
+                </tr>
+              </thead>
+              <tbody id="emailBody"></tbody>
+              <tfoot>
+                <tr style="background:#E8F4FD;font-weight:700;border-top:2px solid #2d5a9e">
+                  <td style="padding:12px 14px;font-size:13px;color:#1e3a5f">📊 Tổng số lượng email nhận trong tuần</td>
+                  <td style="text-align:center;padding:12px 14px;font-size:16px;color:#10B981;font-weight:800" id="emailTotalDa">0</td>
+                  <td style="text-align:center;padding:12px 14px;font-size:16px;color:#EF4444;font-weight:800" id="emailTotalChua">0</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- BANG EMAIL CHUA HOAN THANH -->
+        <div class="section-block" style="margin-top:16px">
+          <div class="section-block-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>⏳ Danh sách Email chưa hoàn thành</span>
+            <div style="display:flex;gap:8px">
+              <button onclick="addEmailPendingRow()" style="background:var(--primary);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">+ Thêm</button>
+              <button onclick="saveEmailPending()" id="saveEmailPendingBtn" style="background:#10B981;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">💾 Lưu</button>
+            </div>
+          </div>
+          <div class="tbl-scroll" style="padding:0">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th style="text-align:left;min-width:180px">Tiêu đề</th>
+                  <th style="text-align:left;width:220px">Nội dung</th>
+                  <th style="text-align:left;width:220px">Lý do chưa xử lý</th>
+                  <th style="width:130px;text-align:center">Tình trạng</th>
+                  <th style="width:36px"></th>
+                </tr>
+              </thead>
+              <tbody id="emailPendingBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL: THU HOI -->
+      <div class="vanhanh-panel" id="panel-thuhoi">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+          <button onclick="saveThuHoiReport()" id="saveThuHoiBtn" style="background:#10B981;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">💾 Lưu tất cả</button>
+        </div>
+
+        <!-- LIEN HE THU HOI -->
+        <div class="section-block" style="margin-bottom:16px">
+          <div class="section-block-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>📞 Liên hệ thu hồi</span>
+            <button onclick="addLienHeRow()" style="background:var(--primary);color:#fff;border:none;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">+ Thêm dòng</button>
+          </div>
+          <div class="tbl-scroll" style="padding:0">
+            <table class="tbl">
+              <thead><tr>
+                <th style="text-align:left">Ngày liên hệ</th>
+                <th style="width:150px;text-align:center">Số lượng</th>
+                <th style="width:36px"></th>
+              </tr></thead>
+              <tbody id="lienHeBody"></tbody>
+              <tfoot>
+                <tr style="background:#E8F4FD;font-weight:700;border-top:2px solid #2d5a9e">
+                  <td style="padding:10px 14px;color:#1e3a5f">Grand Total</td>
+                  <td style="text-align:center;color:#10B981;font-size:15px;font-weight:800" id="lienHeTotal">0</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- THU HOI THIET BI -->
+        <div class="section-block">
+          <div class="section-block-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>📦 Thu hồi thiết bị</span>
+            <button onclick="addThietBiRow()" style="background:var(--primary);color:#fff;border:none;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">+ Thêm dòng</button>
+          </div>
+          <div class="tbl-scroll" style="padding:0">
+            <table class="tbl">
+              <thead><tr>
+                <th style="text-align:left">Loại</th>
+                <th style="width:150px;text-align:center">Số lượng</th>
+                <th style="width:36px"></th>
+              </tr></thead>
+              <tbody id="thietBiBody"></tbody>
+              <tfoot>
+                <tr style="background:#E8F4FD;font-weight:700;border-top:2px solid #2d5a9e">
+                  <td style="padding:10px 14px;color:#1e3a5f">Grand Total</td>
+                  <td style="text-align:center;color:#10B981;font-size:15px;font-weight:800" id="thietBiTotal">0</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL: TON KHO -->
+      <div class="vanhanh-panel" id="panel-tonkho">
+
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px;align-items:center">
+          <button onclick="addTonKhoRow()" style="background:var(--primary);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">+ Thêm hàng</button>
+          <button onclick="saveTonKhoReport()" id="saveTonKhoBtn" style="background:#10B981;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">💾 Lưu lên Sheet</button>
+        </div>
+
+        <div class="section-block">
+          <div class="section-block-title">📦 Thiết bị tồn kho Giao Máy</div>
+          <div class="tbl-scroll" style="padding:0">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th style="text-align:left;min-width:220px">Tổng thiết bị tồn</th>
+                  <th style="width:180px;text-align:center">Số lượng tuần trước</th>
+                  <th style="width:180px;text-align:center">Số lượng tuần này</th>
+                  <th style="width:36px"></th>
+                </tr>
+              </thead>
+              <tbody id="tonKhoBody"></tbody>
+              <tfoot>
+                <tr style="background:#E8F4FD;font-weight:700;border-top:2px solid #2d5a9e">
+                  <td style="padding:10px 14px;color:#1e3a5f">Grand Total</td>
+                  <td style="text-align:center;color:var(--text2);font-size:14px;font-weight:800" id="tonKhoTotalTruoc">0</td>
+                  <td style="text-align:center;color:#10B981;font-size:15px;font-weight:800" id="tonKhoTotalNay">0</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
       </div>
 
     </div>
@@ -2239,8 +2406,12 @@ function pushTicketToSheet() {
 function loadSec4WeekFiles() {
   var week = curWeek;
   if (!week) return;
-  // Load ticket report (tu Sheet cache hoac hien placeholder)
   loadTicketReport(week);
+  // Load email neu dang active
+  var activeTab = document.querySelector('.vanhanh-tab.active');
+  if (activeTab && activeTab.textContent.indexOf('Email') >= 0) {
+    loadEmailReport(week);
+  }
 }
 
 function renderWeekFiles(files) {
@@ -2606,6 +2777,424 @@ function loadGasVersion() {
   });
 }
 setTimeout(loadGasVersion, 2000); // Load sau 2s de khong anh huong load chinh
+
+function switchVanHanhTab(tab, el) {
+  document.querySelectorAll('.vanhanh-tab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  document.querySelectorAll('.vanhanh-panel').forEach(function(p){ p.classList.remove('active'); });
+  var panel = document.getElementById('panel-' + tab);
+  if (panel) panel.classList.add('active');
+  var uploadLabel = document.getElementById('uploadTicketLabel');
+  var driveBtn    = document.getElementById('readDriveBtn');
+  var showTicket  = (tab === 'ticket');
+  if (uploadLabel) uploadLabel.style.display = showTicket ? 'inline-flex' : 'none';
+  if (driveBtn)    driveBtn.style.display    = showTicket ? 'inline-flex' : 'none';
+  // Load data theo tab
+  if (tab === 'email' && curWeek) { loadEmailReport(curWeek); loadEmailPending(curWeek); }
+  if (tab === 'thuhoi' && curWeek) loadThuHoi(curWeek);
+  if (tab === 'tonkho' && curWeek) loadTonKho(curWeek);
+}
+
+
+// ============================================================
+//  EMAIL REPORT
+// ============================================================
+var EMAIL_DEFAULTS = [
+  'Thay đổi thông tin','Tồn đọng','File khách hàng mới',
+  'Thu hồi','Báo lỗi thiết bị','Setup HN - KPSC',
+  'Đền bù','Thay đổi thông tin','Kiểm tra thông tin'
+];
+var _emailRows = [];
+
+function loadEmailReport(weekName) {
+  if (!weekName) return;
+  apiGet({ action:'getEmailReport', weekName: weekName }, function(res) {
+    if (!res || res.error) { renderEmailTable(EMAIL_DEFAULTS.map(function(l){return{loai:l,daXuLy:0,chuaXuLy:0};})); return; }
+    if (!res.rows || res.rows.length === 0) {
+      renderEmailTable(EMAIL_DEFAULTS.map(function(l){return{loai:l,daXuLy:0,chuaXuLy:0};}));
+    } else {
+      renderEmailTable(res.rows);
+    }
+  }, function(){ renderEmailTable(EMAIL_DEFAULTS.map(function(l){return{loai:l,daXuLy:0,chuaXuLy:0};})); });
+}
+
+function renderEmailTable(rows) {
+  _emailRows = rows.map(function(r){ return {loai:r.loai||'',daXuLy:+r.daXuLy||0,chuaXuLy:+r.chuaXuLy||0}; });
+  _renderEmailRows();
+}
+
+function _renderEmailRows() {
+  var rows = [];
+  _emailRows.forEach(function(r, i) {
+    var loai  = (r.loai || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    var da    = r.daXuLy   || 0;
+    var chua  = r.chuaXuLy || 0;
+    rows.push(
+      '<tr>'
+      + '<td><input type="text" data-i="' + i + '" data-f="loai" value="' + loai + '" onchange="_emailChange2(this)" style="width:100%;border:none;background:transparent;font-size:13px;padding:4px 14px;font-family:inherit"></td>'
+      + '<td style="text-align:center"><input type="number" min="0" data-i="' + i + '" data-f="daXuLy" value="' + da + '" onchange="_emailChange2(this)" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;text-align:center"></td>'
+      + '<td style="text-align:center"><input type="number" min="0" data-i="' + i + '" data-f="chuaXuLy" value="' + chua + '" onchange="_emailChange2(this)" style="width:80px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;text-align:center"></td>'
+      + '<td style="text-align:center"><span data-i="' + i + '" onclick="_emailDelRow2(this)" style="cursor:pointer;color:#EF4444;font-size:16px">×</span></td>'
+      + '</tr>'
+    );
+  });
+  document.getElementById('emailBody').innerHTML = rows.join('');
+  _emailUpdateTotal();
+}
+
+function _emailChange2(el) {
+  var i = +el.dataset.i, f = el.dataset.f;
+  if (!_emailRows[i]) return;
+  _emailRows[i][f] = (f === 'loai') ? el.value : (+el.value || 0);
+  _emailUpdateTotal();
+}
+
+function _emailDelRow2(el) {
+  _emailRows.splice(+el.dataset.i, 1);
+  _renderEmailRows();
+}
+
+function _emailChange(i, field, val) {
+  if (!_emailRows[i]) return;
+  _emailRows[i][field] = (field === 'loai') ? val : (+val||0);
+  _emailUpdateTotal();
+}
+
+function _emailDelRow(i) {
+  _emailRows.splice(i, 1);
+  _renderEmailRows();
+}
+
+function addEmailRow() {
+  _emailRows.push({loai:'', daXuLy:0, chuaXuLy:0});
+  _renderEmailRows();
+  var tbody = document.getElementById('emailBody');
+  if (tbody.lastElementChild) tbody.lastElementChild.scrollIntoView({behavior:'smooth'});
+}
+
+function _emailUpdateTotal() {
+  var da = 0, chua = 0;
+  _emailRows.forEach(function(r){ da += +r.daXuLy||0; chua += +r.chuaXuLy||0; });
+  document.getElementById('emailTotalDa').textContent   = da;
+  document.getElementById('emailTotalChua').textContent = chua;
+}
+
+function saveEmailReport() {
+  if (!curWeek) { alert('Vui lòng chọn tuần!'); return; }
+  var btn = document.getElementById('saveEmailBtn');
+  btn.textContent = '⏳ Đang lưu...'; btn.disabled = true;
+  apiGet({
+    action: 'saveEmailReport',
+    weekName: curWeek,
+    rows: JSON.stringify(_emailRows)
+  }, function(res) {
+    btn.disabled = false;
+    if (res && res.success) {
+      btn.textContent = '✅ Đã lưu!';
+      setTimeout(function(){ btn.textContent = '💾 Lưu lên Sheet'; }, 2000);
+    } else {
+      btn.textContent = '❌ Lỗi!';
+      setTimeout(function(){ btn.textContent = '💾 Lưu lên Sheet'; }, 2000);
+    }
+  }, function(){ btn.disabled=false; btn.textContent='❌ Lỗi kết nối'; });
+}
+
+
+// ============================================================
+//  EMAIL PENDING TABLE
+// ============================================================
+var _emailPendingRows = [];
+var EMAIL_TINH_TRANG  = ['Đang xử lý', 'Chờ phản hồi', 'Hoàn thành'];
+
+function loadEmailPending(weekName) {
+  apiGet({ action:'getEmailPending', weekName: weekName }, function(res) {
+    _emailPendingRows = (res && res.rows) ? res.rows : [];
+    _renderEmailPending();
+  }, function(){ _emailPendingRows = []; _renderEmailPending(); });
+}
+
+function _renderEmailPending() {
+  var rows = [];
+  _emailPendingRows.forEach(function(r, i) {
+    var tinhTrangOpts = EMAIL_TINH_TRANG.map(function(t) {
+      return '<option value="' + t + '"' + (r.tinhTrang === t ? ' selected' : '') + '>' + t + '</option>';
+    }).join('');
+    rows.push(
+      '<tr>'
+      + '<td><textarea data-i="' + i + '" data-f="tieude" onchange="_epChange(this)" rows="2" style="width:100%;border:none;background:transparent;font-size:12px;padding:4px 8px;font-family:inherit;resize:vertical">' + (r.tieude||'') + '</textarea></td>'
+      + '<td><textarea data-i="' + i + '" data-f="noidung" onchange="_epChange(this)" rows="2" style="width:100%;border:none;background:transparent;font-size:12px;padding:4px 8px;font-family:inherit;resize:vertical">' + (r.noidung||'') + '</textarea></td>'
+      + '<td><textarea data-i="' + i + '" data-f="lydo" onchange="_epChange(this)" rows="2" style="width:100%;border:none;background:transparent;font-size:12px;padding:4px 8px;font-family:inherit;resize:vertical">' + (r.lydo||'') + '</textarea></td>'
+      + '<td style="text-align:center"><select data-i="' + i + '" data-f="tinhTrang" onchange="_epChange(this)" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px">' + tinhTrangOpts + '</select></td>'
+      + '<td style="text-align:center"><span data-i="' + i + '" onclick="_epDel(this)" style="cursor:pointer;color:#EF4444;font-size:16px">×</span></td>'
+      + '</tr>'
+    );
+  });
+  document.getElementById('emailPendingBody').innerHTML = rows.join('');
+}
+
+function _epChange(el) {
+  var i = +el.dataset.i, f = el.dataset.f;
+  if (_emailPendingRows[i]) _emailPendingRows[i][f] = el.value;
+}
+
+function _epDel(el) {
+  _emailPendingRows.splice(+el.dataset.i, 1);
+  _renderEmailPending();
+}
+
+function addEmailPendingRow() {
+  _emailPendingRows.push({tieude:'', noidung:'', lydo:'', tinhTrang:'Đang xử lý'});
+  _renderEmailPending();
+  var tb = document.getElementById('emailPendingBody');
+  if (tb.lastElementChild) tb.lastElementChild.scrollIntoView({behavior:'smooth'});
+}
+
+function saveEmailPending() {
+  if (!curWeek) { alert('Vui lòng chọn tuần!'); return; }
+  var btn = document.getElementById('saveEmailPendingBtn');
+  btn.textContent = '⏳ Đang lưu...'; btn.disabled = true;
+  apiGet({
+    action: 'saveEmailPending',
+    weekName: curWeek,
+    rows: JSON.stringify(_emailPendingRows)
+  }, function(res) {
+    btn.disabled = false;
+    btn.textContent = (res && res.success) ? '✅ Đã lưu!' : '❌ Lỗi!';
+    setTimeout(function(){ btn.textContent = '💾 Lưu'; }, 2000);
+  }, function(){ btn.disabled=false; btn.textContent='❌ Lỗi'; });
+}
+
+
+// ============================================================
+//  THU HOI REPORT
+// ============================================================
+var _lienHeRows  = [];
+var _thietBiRows = [];
+var THIETBI_TYPES = ['TPBank Hà Nội gửi','TPBank HCM gửi','KTR thu hồi','Khách gửi về','ĐVKD gửi về','Khác'];
+
+function loadThuHoi(weekName) {
+  apiGet({ action:'getThuHoi', weekName: weekName }, function(res) {
+    _lienHeRows  = (res && res.lienHe)  ? res.lienHe  : [];
+    _thietBiRows = (res && res.thietBi) ? res.thietBi : [];
+    _renderLienHe();
+    _renderThietBi();
+  }, function(){ _lienHeRows=[]; _thietBiRows=[]; _renderLienHe(); _renderThietBi(); });
+}
+
+function _renderLienHe() {
+  var rows = [];
+  _lienHeRows.forEach(function(r, i) {
+    rows.push(
+      '<tr>'
+      + '<td><input type="date" data-i="' + i + '" data-f="ngay" value="' + _dateToInput(r.ngay) + '" onchange="_lhChange(this)" style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px"></td>'
+      + '<td style="text-align:center"><input type="number" min="0" data-i="' + i + '" data-f="soLuong" value="' + (r.soLuong||0) + '" onchange="_lhChange(this)" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;text-align:center"></td>'
+      + '<td style="text-align:center"><span data-i="' + i + '" onclick="_lhDel(this)" style="cursor:pointer;color:#EF4444;font-size:16px">×</span></td>'
+      + '</tr>'
+    );
+  });
+  document.getElementById('lienHeBody').innerHTML = rows.join('');
+  _updateLienHeTotal();
+}
+
+function _lhChange(el) {
+  var i=+el.dataset.i, f=el.dataset.f;
+  if (_lienHeRows[i]) _lienHeRows[i][f] = f==='soLuong' ? (+el.value||0) : el.value;
+  if (f==='soLuong') _updateLienHeTotal();
+}
+function _lhDel(el) { _lienHeRows.splice(+el.dataset.i,1); _renderLienHe(); }
+function addLienHeRow() {
+  _lienHeRows.push({ngay:'', soLuong:0});
+  _renderLienHe();
+}
+function _updateLienHeTotal() {
+  var t = _lienHeRows.reduce(function(s,r){ return s+(+r.soLuong||0); },0);
+  document.getElementById('lienHeTotal').textContent = t;
+}
+
+function _renderThietBi() {
+  var rows = [];
+  _thietBiRows.forEach(function(r, i) {
+    var opts = THIETBI_TYPES.map(function(t){
+      return '<option value="' + t + '"' + (r.loai===t?' selected':'') + '>' + t + '</option>';
+    }).join('');
+    rows.push(
+      '<tr>'
+      + '<td><select data-i="' + i + '" data-f="loai" onchange="_tbChange(this)" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px">' + opts + '</select></td>'
+      + '<td style="text-align:center"><input type="number" min="0" data-i="' + i + '" data-f="soLuong" value="' + (r.soLuong||0) + '" onchange="_tbChange(this)" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;text-align:center"></td>'
+      + '<td style="text-align:center"><span data-i="' + i + '" onclick="_tbDel(this)" style="cursor:pointer;color:#EF4444;font-size:16px">×</span></td>'
+      + '</tr>'
+    );
+  });
+  document.getElementById('thietBiBody').innerHTML = rows.join('');
+  _updateThietBiTotal();
+}
+
+function _tbChange(el) {
+  var i=+el.dataset.i, f=el.dataset.f;
+  if (_thietBiRows[i]) _thietBiRows[i][f] = f==='soLuong' ? (+el.value||0) : el.value;
+  if (f==='soLuong') _updateThietBiTotal();
+}
+function _tbDel(el) { _thietBiRows.splice(+el.dataset.i,1); _renderThietBi(); }
+function addThietBiRow() {
+  _thietBiRows.push({loai: THIETBI_TYPES[0], soLuong:0});
+  _renderThietBi();
+}
+function _updateThietBiTotal() {
+  var t = _thietBiRows.reduce(function(s,r){ return s+(+r.soLuong||0); },0);
+  document.getElementById('thietBiTotal').textContent = t;
+}
+
+function _dateToInput(str) {
+  if (!str) return '';
+  var m = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) return m[3]+'-'+m[2]+'-'+m[1];
+  return str;
+}
+
+function saveThuHoiReport() {
+  if (!curWeek) { alert('Vui lòng chọn tuần!'); return; }
+  var btn = document.getElementById('saveThuHoiBtn');
+  btn.textContent='⏳ Đang lưu...'; btn.disabled=true;
+  // Format ngay dd/MM/yyyy
+  var lhForSave = _lienHeRows.map(function(r){
+    var ngay = r.ngay || '';
+    if (ngay.match(/\d{4}-\d{2}-\d{2}/)) {
+      var p = ngay.split('-'); ngay = p[2]+'/'+p[1]+'/'+p[0];
+    }
+    return {ngay: ngay, soLuong: r.soLuong};
+  });
+  apiGet({
+    action: 'saveThuHoi', weekName: curWeek,
+    lienHe: JSON.stringify(lhForSave),
+    thietBi: JSON.stringify(_thietBiRows)
+  }, function(res) {
+    btn.disabled=false;
+    btn.textContent=(res && res.success)?'✅ Đã lưu!':'❌ Lỗi!';
+    setTimeout(function(){btn.textContent='💾 Lưu tất cả';},2000);
+  }, function(){btn.disabled=false; btn.textContent='❌ Lỗi kết nối';});
+}
+
+// ============================================================
+//  TON KHO GIAO MAY
+// ============================================================
+var TONKHO_DEFAULTS = [
+  'Bưu cục chưa trả BB',
+  'Bưu cục báo trả rồi KTR chưa thấy nhận',
+  'Chung biên bản đóng thiếu',
+  'Không đẩy lên file để đối soát với Viettel',
+  'Không sử dụng dịch vụ báo phát',
+  'Không thấy có đơn',
+  'Máy trống',
+  'Thấy đã trả và nhận biên bản rồi nhưng chưa thấy đóng'
+];
+var _tonKhoRows = [];
+
+function loadTonKho(weekName) {
+  if (!weekName) return;
+  apiGet({ action: 'getTonKho', weekName: weekName }, function(res) {
+    if (!res || res.error) {
+      _tonKhoRows = TONKHO_DEFAULTS.map(function(l){ return { loai: l, tuanTruoc: '', tuanNay: '' }; });
+    } else if (!res.rows || res.rows.length === 0) {
+      _tonKhoRows = TONKHO_DEFAULTS.map(function(l){ return { loai: l, tuanTruoc: '', tuanNay: '' }; });
+    } else {
+      _tonKhoRows = res.rows;
+    }
+    _renderTonKho();
+  }, function() {
+    _tonKhoRows = TONKHO_DEFAULTS.map(function(l){ return { loai: l, tuanTruoc: '', tuanNay: '' }; });
+    _renderTonKho();
+  });
+}
+
+function _renderTonKho() {
+  var rows = [];
+  _tonKhoRows.forEach(function(r, i) {
+    var loai    = (r.loai || '').replace(/"/g, '&quot;');
+    var truoc   = r.tuanTruoc !== '' && r.tuanTruoc !== null && r.tuanTruoc !== undefined ? r.tuanTruoc : '';
+    var nay     = r.tuanNay   !== '' && r.tuanNay   !== null && r.tuanNay   !== undefined ? r.tuanNay   : '';
+    // Tô màu so sánh
+    var delta   = (truoc !== '' && nay !== '') ? (Number(nay) - Number(truoc)) : null;
+    var nayColor = delta === null ? 'var(--text)' : (delta > 0 ? '#EF4444' : delta < 0 ? '#10B981' : 'var(--text)');
+    var deltaHtml = '';
+    if (delta !== null && delta !== 0) {
+      deltaHtml = '<span style="font-size:10px;margin-left:4px;color:' + nayColor + '">'
+                + (delta > 0 ? '▲ +' : '▼ ') + delta + '</span>';
+    }
+    rows.push(
+      '<tr>'
+      + '<td><input type="text" data-i="' + i + '" data-f="loai" value="' + loai + '" onchange="_tkChange(this)"'
+      + ' style="width:100%;border:none;background:transparent;font-size:13px;padding:4px 14px;font-family:inherit"></td>'
+      + '<td style="text-align:center">'
+      + '<input type="number" min="0" data-i="' + i + '" data-f="tuanTruoc" value="' + truoc + '" readonly'
+      + ' style="width:100px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;text-align:center;background:#f8f9fa;color:var(--text2)">'
+      + '</td>'
+      + '<td style="text-align:center">'
+      + '<input type="number" min="0" data-i="' + i + '" data-f="tuanNay" value="' + nay + '" onchange="_tkChange(this)"'
+      + ' style="width:100px;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;text-align:center;font-weight:600">'
+      + deltaHtml
+      + '</td>'
+      + '<td style="text-align:center"><span data-i="' + i + '" onclick="_tkDel(this)" style="cursor:pointer;color:#EF4444;font-size:16px">×</span></td>'
+      + '</tr>'
+    );
+  });
+  document.getElementById('tonKhoBody').innerHTML = rows.join('');
+  _updateTonKhoTotal();
+}
+
+function _tkChange(el) {
+  var i = +el.dataset.i, f = el.dataset.f;
+  if (!_tonKhoRows[i]) return;
+  _tonKhoRows[i][f] = (f === 'loai') ? el.value : (el.value !== '' ? +el.value : '');
+  if (f !== 'loai') { _updateTonKhoTotal(); _renderTonKho(); }
+}
+
+function _tkDel(el) {
+  _tonKhoRows.splice(+el.dataset.i, 1);
+  _renderTonKho();
+}
+
+function addTonKhoRow() {
+  _tonKhoRows.push({ loai: '', tuanTruoc: '', tuanNay: '' });
+  _renderTonKho();
+  var tb = document.getElementById('tonKhoBody');
+  if (tb && tb.lastElementChild) tb.lastElementChild.scrollIntoView({ behavior: 'smooth' });
+}
+
+function _updateTonKhoTotal() {
+  var totTruoc = 0, totNay = 0;
+  _tonKhoRows.forEach(function(r) {
+    if (r.tuanTruoc !== '' && r.tuanTruoc !== null) totTruoc += Number(r.tuanTruoc) || 0;
+    if (r.tuanNay   !== '' && r.tuanNay   !== null) totNay   += Number(r.tuanNay)   || 0;
+  });
+  document.getElementById('tonKhoTotalTruoc').textContent = totTruoc || '—';
+  document.getElementById('tonKhoTotalNay').textContent   = totNay   || '—';
+}
+
+function saveTonKhoReport() {
+  if (!curWeek) { alert('Vui lòng chọn tuần!'); return; }
+  var btn = document.getElementById('saveTonKhoBtn');
+  btn.textContent = '⏳ Đang lưu...'; btn.disabled = true;
+  apiGet({
+    action:   'saveTonKho',
+    weekName: curWeek,
+    rows:     JSON.stringify(_tonKhoRows)
+  }, function(res) {
+    btn.disabled = false;
+    if (res && res.success) {
+      btn.textContent = '✅ Đã lưu!';
+      showToast('Đã lưu tồn kho tuần ' + curWeek, 'ok');
+    } else {
+      btn.textContent = '❌ Lỗi!';
+      showToast('Lỗi lưu tồn kho: ' + (res && res.error || ''), 'err');
+    }
+    setTimeout(function(){ btn.textContent = '💾 Lưu lên Sheet'; }, 2500);
+  }, function() {
+    btn.disabled = false;
+    btn.textContent = '❌ Lỗi kết nối';
+    setTimeout(function(){ btn.textContent = '💾 Lưu lên Sheet'; }, 2500);
+  });
+}
+
 </script>
 </body>
 </html>
