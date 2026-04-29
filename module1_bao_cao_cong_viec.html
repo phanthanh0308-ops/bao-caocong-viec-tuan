@@ -1210,6 +1210,14 @@ function switchWeek(name) {
   _ticketCache    = {};
   _ticketNotes    = {};
   _pendingTickets = [];
+  // Reset Thu hoi
+  _lienHeRows  = [];
+  _thietBiRows = [];
+  // Reset Ton kho
+  _tonKhoRows  = [];
+  // Reset Email
+  _emailRows        = typeof _emailRows        !== 'undefined' ? [] : _emailRows;
+  _emailPendingRows = typeof _emailPendingRows !== 'undefined' ? [] : _emailPendingRows;
   var pb = document.getElementById('ticketPendingBlock');
   if (pb) pb.style.display = 'none';
   var tb = document.getElementById('ticketBlock');
@@ -1225,6 +1233,16 @@ function switchWeek(name) {
   var activeSec = document.querySelector('.rpt-section.active');
   if (activeSec && activeSec.id === 'sec4') {
     setTimeout(loadSec4WeekFiles, 100);
+    // Reload tab vận hành đang active
+    setTimeout(function() {
+      var activePanel = document.querySelector('.vanhanh-panel.active');
+      if (activePanel) {
+        var pid = activePanel.id;
+        if (pid === 'panel-email')   { loadEmailReport(name); loadEmailPending(name); }
+        if (pid === 'panel-thuhoi')  { loadThuHoi(name); }
+        if (pid === 'panel-tonkho')  { loadTonKho(name); }
+      }
+    }, 150);
   }
   buildSideWeekList();
   var sideLabel = document.getElementById('sideWeekLabel');
